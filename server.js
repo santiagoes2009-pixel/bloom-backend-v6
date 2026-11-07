@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
@@ -26,6 +27,12 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   credentials: false
+}));
+
+// 2.1 SERVIR ARCHIVOS ESTÁTICOS DE LA TIENDA Y PANEL ADMIN DESDE /public
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1h',
+  etag: true
 }));
 
 // 3. LÍMITE DE TAMAÑO DE PAYLOAD (Protección contra ataques Denial-of-Service / Memory Exhaustion)
@@ -660,6 +667,15 @@ app.get('/api/v6/sync/pull', async (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
+});
+
+// Ruta fallback para SPA (Tienda y Panel Admin)
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  if (req.path.startsWith('/admin')) {
+    return res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
+  }
+  return res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Iniciar servidor blindado

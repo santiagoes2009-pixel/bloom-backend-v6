@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloom Beauty | Centro de Mando & Panel de Administración VIP</title>
+  <link rel="icon" type="image/jpeg" href="imagenes/logo-bloom-beauty.jpg">
+  
+  <!-- Tipografías de Alta Gama -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="admin.css?v=6.8">
+</head>
+<body>
+
+  <!-- ======================================================================
+       PANTALLA DE ACCESO SEGURO / LOGIN
+       ====================================================================== -->
+  <div id="admin-login-screen" class="admin-login-overlay">
+    <div class="login-card">
+      <img src="imagenes/logo-bloom-beauty.jpg" alt="Bloom Beauty" class="login-brand-logo">
+      <h1 class="login-title">Bloom <span>Beauty</span></h1>
+      <p class="login-subtitle">Centro de Mando & Administración Avanzada v6 • Cloud-Ready</p>
+      
+      <div id="login-error-msg" class="login-alert-error">
+        Credenciales incorrectas. Verifique usuario y contraseña.
+      </div>
+
+      <form id="login-form-admin" onsubmit="handleAdminLogin(event)" class="login-form">
+        <div class="form-group">
+          <label for="admin-user-input">Usuario / Correo</label>
+          <input type="text" id="admin-user-input" required placeholder="Ingresa tu usuario o correo" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="admin-pass-input">Contraseña</label>
+          <div class="admin-pass-input-wrap">
+            <input type="password" id="admin-pass-input" required placeholder="Ingresa tu contraseña" autocomplete="off">
+            <button type="button" class="btn-admin-pass-toggle" onclick="toggleAdminPassVisibility('admin-pass-input', this)" aria-label="Mostrar u ocultar contraseña" title="Mostrar / Ocultar contraseña">👁️</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-admin-primary" style="width: 100%;">
+          <span>🔒 Acceder al Panel v6</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       ESTRUCTURA PRINCIPAL DEL PANEL
+       ====================================================================== -->
+  <div id="admin-app-wrapper" class="admin-wrapper" style="display: none;">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="sidebar-brand-box">
+        <img src="imagenes/logo-bloom-beauty.jpg" alt="Logo" class="sidebar-logo">
+        <div class="sidebar-brand-text">
+          <h2>Bloom Beauty</h2>
+          <span>Admin Panel v6 VIP</span>
+        </div>
+        <button type="button" class="btn-sidebar-close-mobile" onclick="toggleAdminSidebar(false)" aria-label="Cerrar menú">✕</button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Operación & Ventas</div>
+        <a class="nav-item active" onclick="switchAdminView('dashboard', this)">
+          <span class="nav-icon">📊</span>
+          <span>Inicio & Resumen</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('orders', this)">
+          <span class="nav-icon">📦</span>
+          <span>Pedidos & Despacho</span>
+          <span id="nav-count-orders" class="nav-badge">0</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('customers', this)">
+          <span class="nav-icon">👥</span>
+          <span>Usuarios & Tu Saldo</span>
+          <span id="nav-count-customers" class="nav-badge" style="background: rgba(16,185,129,0.2); color:#34D399;">0</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('transactions', this)">
+          <span class="nav-icon">💳</span>
+          <span>Transacciones</span>
+          <span id="nav-count-transactions" class="nav-badge">0</span>
+        </a>
+
+        <div class="nav-section-title">Página Web & Catálogo (1-Clic)</div>
+        <a class="nav-item" onclick="switchAdminView('store-settings', this)">
+          <span class="nav-icon">🌸</span>
+          <span>Portada & Página Web</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('products', this)">
+          <span class="nav-icon">🛍️</span>
+          <span>Productos & Precios</span>
+          <span id="nav-count-products" class="nav-badge">0</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('brands', this)">
+          <span class="nav-icon">👑</span>
+          <span>Marcas Oficiales</span>
+          <span id="nav-count-brands" class="nav-badge">0</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('offers', this)">
+          <span class="nav-icon">🔥</span>
+          <span>Ofertas & Cupones</span>
+          <span id="nav-count-offers" class="nav-badge">0</span>
+        </a>
+
+        <div class="nav-section-title">Comunidad & Alertas</div>
+        <a class="nav-item" onclick="switchAdminView('reviews', this)">
+          <span class="nav-icon">⭐</span>
+          <span>Reseñas & Rating</span>
+          <span id="nav-count-reviews" class="nav-badge">0</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('notifications', this)">
+          <span class="nav-icon">🔔</span>
+          <span>Alertas & Push</span>
+          <span id="nav-count-notifications" class="nav-badge">4</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('bugs', this)">
+          <span class="nav-icon">🛠️</span>
+          <span>Soporte & Bugs</span>
+          <span id="nav-count-bugs" class="nav-badge" style="background: rgba(245,158,11,0.2); color:#FBBF24;">0</span>
+        </a>
+
+        <div class="nav-section-title">Analítica & Seguridad</div>
+        <a class="nav-item" onclick="switchAdminView('reports', this)">
+          <span class="nav-icon">📑</span>
+          <span>Informes Diarios</span>
+        </a>
+        <a class="nav-item" onclick="switchAdminView('telemetry', this)">
+          <span class="nav-icon">🛰️</span>
+          <span>Huella & Rastro Digital</span>
+          <span id="nav-count-live-sessions" class="nav-badge" style="background: rgba(16,185,129,0.2); color:#34D399;">0 En Vivo</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="live-users-pill" onclick="switchAdminView('store-settings')" style="cursor: pointer;" title="Editar Portada y Sincronización con la Tienda Principal">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="live-dot"></span>
+            <span>Tienda Principal:</span>
+          </div>
+          <strong id="sidebar-sync-counter" style="color:#34D399;">En Vivo • 1-Clic</strong>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA DE CONTENIDO -->
+    <main class="admin-main">
+      <!-- TOPBAR -->
+      <header class="admin-topbar">
+        <div class="topbar-left">
+          <button type="button" class="btn-sidebar-toggle" id="btn-sidebar-toggle" onclick="toggleAdminSidebar()" aria-label="Abrir Menú Lateral">
+            <span class="sidebar-toggle-icon">☰</span>
+          </button>
+          <h2 id="topbar-current-title" class="topbar-title-view">Inicio & Métricas Reales</h2>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-badge-sync" onclick="switchAdminView('store-settings')" style="cursor: pointer;" title="Abrir Estado del Servidor Cloud-Ready & Sincronización">
+            <span class="live-dot" id="topbar-cloud-live-dot"></span>
+            <span class="sync-text" id="topbar-cloud-status-text">Cloud-Ready Sincronizado</span>
+          </div>
+
+          <a href="../bloom%20bauty%20v6/index.html" id="topbar-open-store-link" target="_blank" class="topbar-btn-store" title="Abrir Tienda Pública Bloom Beauty v6">
+            <span class="store-btn-icon">🌸</span>
+            <span class="store-btn-text">Ver Tienda</span>
+          </a>
+
+          <div class="topbar-user">
+            <div class="user-avatar-circle" title="Administradora Oficial">BB</div>
+            <button type="button" class="btn-topbar-logout" onclick="adminLogout()" title="Cerrar Sesión">
+              <span class="logout-icon">🚪</span>
+              <span class="logout-text">Salir</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- VISTAS DEL PANEL -->
+      <div class="admin-content-area">
+
+        <!-- ================================================================
+             1. VISTA INICIO (RESUMEN GENERAL & KPIS REALES)
+             ================================================================ -->
+        <section id="view-dashboard" class="admin-view active">
+          <!-- KPI CARDS CON DATOS 100% REALES (1-CLIC DIRECTO A CADA SECCIÓN) -->
+          <div class="kpi-grid">
+            <div class="kpi-card" style="cursor: pointer;" onclick="switchAdminView('orders')" title="Ir a Pedidos y Despacho">
+              <div class="kpi-top">
+                <span class="kpi-label">Ventas Reales Totales</span>
+                <span class="kpi-icon-wrap">💰</span>
+              </div>
+              <div class="kpi-value" id="kpi-total-sales">$0 COP</div>
+              <div class="kpi-foot">
+                <span class="badge-real">100% Real</span>
+                <span id="kpi-orders-count-label">0 pedidos registrados</span>
+              </div>
+            </div>
+
+            <div class="kpi-card" style="cursor: pointer;" onclick="switchAdminView('products')" title="Editar Productos y Precios en 1 Clic">
+              <div class="kpi-top">
+                <span class="kpi-label">Catálogo Activo</span>
+                <span class="kpi-icon-wrap">🧴</span>
+              </div>
+              <div class="kpi-value" id="kpi-products-count">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">1-Clic</span>
+                <span id="kpi-brands-count-label">0 marcas oficiales</span>
+              </div>
+            </div>
+
+            <div class="kpi-card" style="cursor: pointer;" onclick="switchAdminView('offers')" title="Editar Ofertas y Cupones en 1 Clic">
+              <div class="kpi-top">
+                <span class="kpi-label">Ofertas Activas</span>
+                <span class="kpi-icon-wrap">🔥</span>
+              </div>
+              <div class="kpi-value" id="kpi-offers-count">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Promociones</span>
+                <span id="kpi-offers-active-label">Vigentes en tienda</span>
+              </div>
+            </div>
+
+            <div class="kpi-card" style="cursor: pointer;" onclick="switchAdminView('customers')" title="Ir a Usuarios y Administración de Tu Saldo">
+              <div class="kpi-top">
+                <span class="kpi-label">Usuarios & Tu Saldo</span>
+                <span class="kpi-icon-wrap">💎</span>
+              </div>
+              <div class="kpi-value" id="kpi-customers-count">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real" id="kpi-recharges-badge">Saldos</span>
+                <span id="kpi-customers-balance-label">$0 en cuentas</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACCESOS RÁPIDOS EJECUTIVOS V6 (1-CLIC) -->
+          <div class="admin-guide-card">
+            <div class="guide-text">
+              <h3>⚡ Control Directo en 1 Clic — Vinculado en Vivo con la Tienda</h3>
+              <p>Toca cualquier dato en las tablas o en Portada Web para editarlo al instante sin formularios complicados.</p>
+            </div>
+            <div class="guide-quick-actions">
+              <button type="button" class="btn-guide-pill" onclick="switchAdminView('store-settings')">🌸 Editar Portada Web</button>
+              <button type="button" class="btn-guide-pill" onclick="switchAdminView('products'); setTimeout(addNewGenericProduct, 80);">⚡ + Nuevo Producto</button>
+              <button type="button" class="btn-guide-pill" onclick="openManualOrderModal()">➕ Pedido Manual</button>
+              <button type="button" class="btn-guide-pill" onclick="switchAdminView('customers')">💎 Usuarios & Saldos</button>
+              <button type="button" class="btn-guide-pill" onclick="switchAdminView('reports')">📑 Informe del Día</button>
+            </div>
+          </div>
+
+          <!-- ÚLTIMOS PEDIDOS REGISTRADOS -->
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>📦</span> Últimos Pedidos y Despachos
+                </div>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 3px;">
+                  💡 Toca el <strong>Estado de Despacho</strong> de cualquier pedido para actualizarlo con un solo clic.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <button class="btn-admin-primary" style="padding: 0.55rem 1rem; font-size: 0.85rem;" onclick="openManualOrderModal()">➕ Registrar Pedido Manual</button>
+                <button class="btn-secondary" onclick="switchAdminView('orders')">Ver Todos los Pedidos</button>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID Pedido</th>
+                    <th>Hora Exacta & Fecha</th>
+                    <th>Cliente</th>
+                    <th>Teléfono / WhatsApp</th>
+                    <th>Ciudad & Depto.</th>
+                    <th>Total Pagado</th>
+                    <th>Estado (1-Clic)</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboard-recent-orders-body">
+                  <!-- Inyectado por JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             2. VISTA DE PRODUCTOS (EDICIÓN 100% EN 1 CLIC)
+             ================================================================ -->
+        <section id="view-products" class="admin-view">
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>🛍️</span> Catálogo de Productos y Precios
+                  <span id="products-total-tag" class="tag">0 productos</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 <strong>Edición en 1 Clic:</strong> Toca cualquier <strong>Foto</strong>, <strong>Nombre</strong>, <strong>Descripción</strong>, <strong>Distintivo</strong>, <strong>Marca</strong>, <strong>Categoría</strong>, <strong>Precio</strong>, <strong>Precio Tachado</strong> o <strong>Estado</strong> para cambiarlo al instante.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <div class="search-input-wrap">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="admin-search-products" placeholder="Buscar por nombre, categoría o marca..." oninput="filterAdminProducts()">
+                </div>
+                <select id="admin-filter-product-brand" class="form-group-admin" style="margin: 0; min-width: 170px;" onchange="filterAdminProducts()">
+                  <option value="all">Todas las Marcas</option>
+                </select>
+                <button class="btn-admin-primary" onclick="addNewGenericProduct()" title="Crea un producto nuevo inmediatamente en la tabla para rellenar con 1 clic">
+                  <span>⚡ ➕ Nuevo Producto</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Foto (1-Clic)</th>
+                    <th>Nombre, Descripción & Badge</th>
+                    <th>Marca Oficial</th>
+                    <th>Categoría</th>
+                    <th>Precio Venta</th>
+                    <th>Oferta / Precio Regular</th>
+                    <th>Estado (1-Clic)</th>
+                    <th style="text-align: right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-products-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             3. VISTA DE MARCAS (EDICIÓN 100% EN 1 CLIC)
+             ================================================================ -->
+        <section id="view-brands" class="admin-view">
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>👑</span> Marcas Oficiales de la Tienda
+                  <span id="brands-total-tag" class="tag">0 marcas</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 <strong>Edición en 1 Clic:</strong> Toca el <strong>Logo</strong>, <strong>Banner</strong>, <strong>Nombre</strong>, <strong>Distintivo</strong>, <strong>Categoría</strong>, <strong>Eslogan/Descripción</strong> o <strong>Estado</strong> para editarlo en vivo.
+                </p>
+              </div>
+              <button class="btn-admin-primary" onclick="addNewGenericBrand()" title="Crea una marca nueva inmediatamente en la tabla para rellenar">
+                <span>⚡ ➕ Nueva Marca</span>
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Logo & Banner</th>
+                    <th>Nombre & Distintivo</th>
+                    <th>Categoría / Especialidad</th>
+                    <th>Eslogan & Descripción</th>
+                    <th>Catálogo</th>
+                    <th>Estado (1-Clic)</th>
+                    <th style="text-align: right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-brands-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             4. VISTA DE OFERTAS & CUPONES (EDICIÓN 100% EN 1 CLIC)
+             ================================================================ -->
+        <section id="view-offers" class="admin-view">
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>🔥</span> Ofertas, Banners & Cupones de Descuento
+                  <span id="offers-total-tag" class="tag">0 ofertas</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 <strong>Edición en 1 Clic:</strong> Toca cualquier <strong>Título</strong>, <strong>% Descuento</strong>, <strong>Texto de Barra</strong>, <strong>Marca</strong>, <strong>Cupón</strong>, <strong>Vencimiento</strong> o <strong>Estado</strong> para cambiarlo en vivo en la tienda.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <button class="btn-admin-primary" onclick="addQuickOffer()">
+                  <span>⚡ ➕ Nueva Oferta en 1 Clic</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Título de Oferta</th>
+                    <th>% OFF</th>
+                    <th>Texto en Barra Superior</th>
+                    <th>Aplica en Marca</th>
+                    <th>Código Cupón</th>
+                    <th>Vencimiento</th>
+                    <th>Estado (1-Clic)</th>
+                    <th style="text-align: right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-offers-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             5. VISTA DE RESEÑAS & CALIFICACIÓN DE LA PÁGINA (1-CLIC)
+             ================================================================ -->
+        <section id="view-reviews" class="admin-view">
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>⭐</span> Calificación de la Tienda & Reseñas Reales
+                  <span id="reviews-avg-pill" class="tag" style="color: #FBBF24;">⭐ 5.0 / 5.0</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 <strong>Edición en 1 Clic:</strong> Toca el <strong>Nombre</strong>, <strong>Ciudad</strong>, las <strong>Estrellas ★</strong>, el <strong>Producto</strong>, el <strong>Testimonio</strong> o <strong>Verificado</strong> para editarlo al instante.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <button class="btn-admin-primary" onclick="addQuickReview()">
+                  <span>⚡ ➕ Nueva Reseña en 1 Clic</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Ubicación</th>
+                    <th>Calificación</th>
+                    <th>Producto / Tema</th>
+                    <th>Testimonio / Comentario</th>
+                    <th>Fecha</th>
+                    <th>Verificado</th>
+                    <th style="text-align: right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-reviews-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             5.1 VISTA DE REPORTES DE BUGS & SOPORTE TÉCNICO
+             ================================================================ -->
+        <section id="view-bugs" class="admin-view">
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>🛠️</span> Casos y Reportes de Bugs Enviados por Clientes
+                  <span id="bugs-total-count-tag" class="tag">0 reportes</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  Inconvenientes, errores o sugerencias que los visitantes enviaron desde el final de la tienda principal.
+                </p>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Fecha & Hora</th>
+                    <th>Cliente</th>
+                    <th>WhatsApp</th>
+                    <th>Tipo de Falla</th>
+                    <th>Detalle del Inconveniente</th>
+                    <th>Dispositivo</th>
+                    <th style="text-align: right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-bugs-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             VISTA DE USUARIOS REGISTRADOS Y ADMINISTRACIÓN DE "TU SALDO"
+             ================================================================ -->
+        <section id="view-customers" class="admin-view">
+          <!-- RESUMEN RÁPIDO DE USUARIOS Y SALDOS -->
+          <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Usuarios Registrados</span>
+                <span class="kpi-icon-wrap">👥</span>
+              </div>
+              <div class="kpi-value" id="cust-kpi-total-users">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Cuentas VIP</span>
+                <span>Sincronizados con la tienda</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Total en "Tu Saldo"</span>
+                <span class="kpi-icon-wrap">💎</span>
+              </div>
+              <div class="kpi-value" id="cust-kpi-total-balance" style="color: #34D399;">$0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Disponible</span>
+                <span>Suma de saldos de clientes</span>
+              </div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Recargas Pendientes</span>
+                <span class="kpi-icon-wrap">🔔</span>
+              </div>
+              <div class="kpi-value" id="cust-kpi-pending-recharges" style="color: #FBBF24;">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Solicitudes</span>
+                <span id="cust-kpi-pending-amount-label">Sin solicitudes pendientes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SOLICITUDES DE RECARGA ENVIADAS DESDE LA TIENDA -->
+          <div class="card-panel" id="admin-recharges-panel" style="margin-bottom: 1.5rem;">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>🔔</span> Solicitudes de Recarga de "Tu Saldo"
+                  <span id="recharges-pending-tag" class="tag" style="color: #FBBF24;">0 pendientes</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 Solicitudes enviadas en vivo desde la tienda. Pulsa <strong>✓ Aprobar en 1 Clic</strong> para abonar el saldo de inmediato (puedes tocar la referencia para editarla).
+                </p>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Referencia</th>
+                    <th>Fecha & Hora</th>
+                    <th>Cliente</th>
+                    <th>WhatsApp</th>
+                    <th>Medio & Comprobante (1-Clic)</th>
+                    <th>Monto Solicitado</th>
+                    <th>Estado</th>
+                    <th style="text-align: right;">Acción en 1 Clic</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-recharges-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- DIRECTORIO DE CLIENTES Y ADMINISTRACIÓN DE SALDOS -->
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>👥</span> Clientes Registrados y Control de "Tu Saldo"
+                  <span id="customers-full-count-tag" class="tag" style="color: #34D399;">0 usuarios</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 <strong>Edición en 1 Clic:</strong> Toca el <strong>Nombre</strong>, <strong>Dirección</strong>, <strong>Teléfono</strong>, <strong>Correo</strong>, <strong>Ciudad</strong> o el monto de <strong>💎 Tu Saldo</strong> (o usa <code>+10k</code> / <code>+50k</code>) para actualizar en vivo.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <div class="search-input-wrap">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="admin-search-customers" placeholder="Buscar por nombre, correo, WhatsApp o ciudad..." oninput="filterAdminCustomers()">
+                </div>
+                <button class="btn-admin-primary" onclick="openCreateCustomerModal()">
+                  <span>➕ Nuevo Usuario</span>
+                </button>
+                <button class="btn-secondary" onclick="exportCustomersJSON()">⬇️ Exportar JSON</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Cliente & Dirección (1-Clic)</th>
+                    <th>WhatsApp (1-Clic)</th>
+                    <th>Correo (1-Clic)</th>
+                    <th>Ciudad & Depto. (1-Clic)</th>
+                    <th>💎 Tu Saldo & Abono Rápido</th>
+                    <th>Registro</th>
+                    <th style="text-align: right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-customers-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             7. VISTA DE PEDIDOS & GESTIÓN MANUAL DE DESPACHO
+             ================================================================ -->
+        <section id="view-orders" class="admin-view">
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>📦</span> Gestión de Pedidos & Despacho en 1 Clic
+                  <span id="orders-full-count-tag" class="tag">0 pedidos</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 <strong>Edición en 1 Clic:</strong> Toca el <strong>Estado</strong> para despachar, o toca la <strong>Dirección</strong> / <strong>Guía de Envío</strong> para actualizar y notificar en el perfil del cliente en vivo.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <div class="search-input-wrap">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="admin-search-orders" placeholder="Buscar por ID, cliente, ciudad o producto..." oninput="renderOrdersTable()">
+                </div>
+                <select id="admin-filter-order-status" class="admin-inline-filter-select" onchange="renderOrdersTable()">
+                  <option value="all">Todos los Estados</option>
+                  <option value="Por Despachar">⏳ Por Despachar</option>
+                  <option value="Confirmado">✓ Confirmado</option>
+                  <option value="Despachado">🚚 Despachado</option>
+                </select>
+                <button class="btn-admin-primary" onclick="openManualOrderModal()">
+                  <span>➕ Registrar Pedido Manual</span>
+                </button>
+                <button class="btn-secondary" onclick="exportOrdersJSON()">⬇️ Exportar JSON</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID / Origen</th>
+                    <th>Hora Exacta & Fecha</th>
+                    <th>Cliente & WhatsApp</th>
+                    <th>Ciudad, Depto. & Dirección</th>
+                    <th>Productos Específicos</th>
+                    <th>Método de Pago</th>
+                    <th>Total</th>
+                    <th>Estado Despacho</th>
+                    <th style="text-align: right;">Gestión Manual</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-orders-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             8. VISTA DE HUELLA Y RASTRO DIGITAL PERFECTO (TELEMETRÍA V6)
+             ================================================================ -->
+        <section id="view-telemetry" class="admin-view">
+          <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Conectados en Vivo</span>
+                <span class="kpi-icon-wrap">🟢</span>
+              </div>
+              <div class="kpi-value" id="tel-kpi-live" style="color: #34D399;">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Activo</span>
+                <span>Navegando en este instante</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Total Sesiones Registradas</span>
+                <span class="kpi-icon-wrap">🛰️</span>
+              </div>
+              <div class="kpi-value" id="tel-kpi-total">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Rastro</span>
+                <span id="tel-kpi-today-label">0 ingresos hoy</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Usuarios Identificados</span>
+                <span class="kpi-icon-wrap">🔑</span>
+              </div>
+              <div class="kpi-value" id="tel-kpi-auth" style="color: var(--gold-light);">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Autenticados</span>
+                <span>Con sesión iniciada</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Permanencia Promedio</span>
+                <span class="kpi-icon-wrap">⏱️</span>
+              </div>
+              <div class="kpi-value" id="tel-kpi-avg-time">0 seg</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Atención</span>
+                <span>Tiempo medio por visita</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>🛰️</span> Huella y Rastro Digital Perfecto
+                  <span id="telemetry-count-tag" class="tag">0 sesiones</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  Registro exacto de quién entró, permisos concedidos, ciudad/departamento, hora exacta de ingreso/salida, tiempo de navegación y productos mirados.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <div class="search-input-wrap">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="telemetry-search-input" placeholder="Buscar usuario, ciudad, huella o producto..." oninput="renderTelemetryView()">
+                </div>
+                <select id="telemetry-filter-mode" class="admin-inline-filter-select" onchange="renderTelemetryView()">
+                  <option value="all">Todas las Sesiones</option>
+                  <option value="live">🟢 Solo En Vivo</option>
+                  <option value="authenticated">🔑 Usuarios Autenticados</option>
+                  <option value="viewed_products">🛍️ Miraron Productos</option>
+                </select>
+                <button class="btn-secondary" onclick="refreshSessionsFromStorage(); renderTelemetryView();">🔄 Actualizar</button>
+                <button class="btn-table-action danger" style="padding: 0.65rem 1rem;" onclick="clearRealSessions()">🗑️ Limpiar Historial</button>
+              </div>
+            </div>
+
+            <div id="telemetry-sessions-container">
+              <!-- Inyectado dinámicamente -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             9. VISTA DE CONTROL DE TRANSACCIONES (RECARGAS Y COMPRAS)
+             ================================================================ -->
+        <section id="view-transactions" class="admin-view">
+          <div class="kpi-grid" style="margin-bottom: 1.5rem;">
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Compras Registradas</span>
+                <span class="kpi-icon-wrap">🛍️</span>
+              </div>
+              <div class="kpi-value" id="tx-kpi-purchases-sum" style="color: #34D399;">$0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Ventas</span>
+                <span id="tx-kpi-purchases-count">0 compras</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Recargas de Saldo</span>
+                <span class="kpi-icon-wrap">💎</span>
+              </div>
+              <div class="kpi-value" id="tx-kpi-recharges-sum" style="color: var(--gold-light);">$0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Abonado</span>
+                <span id="tx-kpi-recharges-count">0 recargas aprobadas</span>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-top">
+                <span class="kpi-label">Pendientes de Despacho</span>
+                <span class="kpi-icon-wrap">🚚</span>
+              </div>
+              <div class="kpi-value" id="tx-kpi-pending-dispatch" style="color: #FBBF24;">0</div>
+              <div class="kpi-foot">
+                <span class="badge-real">Logística</span>
+                <span>Listos para alistar y enviar</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>💳</span> Control Maestro de Transacciones (Recargas & Compras)
+                  <span id="tx-total-count-tag" class="tag">0 movimientos</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  Visualización cronológica exacta de quién recargó saldo, quién compró, qué productos específicos adquirió y a qué hora exacta para agilizar el despacho.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <div class="search-input-wrap">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" id="tx-search-input" placeholder="Buscar cliente, teléfono, producto o ID..." oninput="renderTransactionsView()">
+                </div>
+                <select id="tx-filter-category" class="admin-inline-filter-select" onchange="renderTransactionsView()">
+                  <option value="all">Todas las Transacciones</option>
+                  <option value="compra">🛍️ Solo Compras de Productos</option>
+                  <option value="recarga">💎 Solo Recargas de Saldo</option>
+                </select>
+                <input type="date" id="tx-filter-date" class="admin-inline-filter-select" onchange="renderTransactionsView()" title="Filtrar por día exacto">
+                <button class="btn-secondary" onclick="clearTxFilters()">Ver Todo</button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Hora Exacta & Fecha</th>
+                    <th>Tipo</th>
+                    <th>Ref / ID</th>
+                    <th>Usuario & Contacto</th>
+                    <th>Destino / Ubicación</th>
+                    <th>Productos Adquiridos / Concepto</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                    <th style="text-align: right;">Acción Rápida</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-transactions-table-body">
+                  <!-- Inyectado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             10. VISTA DE INFORMES DIARIOS DESCARGABLES
+             ================================================================ -->
+        <section id="view-reports" class="admin-view">
+          <div class="card-panel" style="border-color: var(--admin-border);">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>📑</span> Informes Diarios Ejecutivos & Analítica Descargable
+                </div>
+                <p style="font-size: 0.86rem; color: var(--text-muted); margin-top: 4px;">
+                  Genera al final del día el reporte consolidado de flujo de visitantes, productos más mirados, recargas de saldo y ventas detalladas.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <input type="date" id="report-date-input" class="admin-inline-filter-select" onchange="renderDailyReportsView()">
+                <button type="button" class="btn-secondary" onclick="setReportToday()">Hoy</button>
+                <button type="button" class="btn-admin-primary" onclick="downloadDailyReportCSV()">
+                  <span>📥 Descargar Excel / CSV</span>
+                </button>
+                <button type="button" class="btn-admin-primary" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #FFF;" onclick="downloadDailyReportHTML(true)">
+                  <span>🖨️ Reporte Ejecutivo / PDF</span>
+                </button>
+                <button type="button" class="btn-secondary" onclick="downloadDailyReportHTML(false)">⬇️ HTML</button>
+              </div>
+            </div>
+
+            <!-- KPIS DEL DÍA SELECCIONADO -->
+            <div class="kpi-grid" style="margin-bottom: 1.5rem; margin-top: 0.5rem;">
+              <div class="kpi-card">
+                <div class="kpi-top">
+                  <span class="kpi-label">Flujo de Personas (Día)</span>
+                  <span class="kpi-icon-wrap">👣</span>
+                </div>
+                <div class="kpi-value" id="rep-kpi-visitors">0</div>
+                <div class="kpi-foot">
+                  <span class="badge-real" id="rep-kpi-auth-visitors">0 autenticados</span>
+                  <span id="rep-kpi-avg-duration">Prom: 0 seg</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-top">
+                  <span class="kpi-label">Ventas Totales del Día</span>
+                  <span class="kpi-icon-wrap">💰</span>
+                </div>
+                <div class="kpi-value" id="rep-kpi-sales" style="color: #34D399;">$0</div>
+                <div class="kpi-foot">
+                  <span class="badge-real" id="rep-kpi-orders-breakdown">0 pedidos</span>
+                  <span id="rep-kpi-units-sold">0 uds. vendidas</span>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-top">
+                  <span class="kpi-label">Recargas Aprobadas (Día)</span>
+                  <span class="kpi-icon-wrap">💎</span>
+                </div>
+                <div class="kpi-value" id="rep-kpi-recharges" style="color: var(--gold-light);">$0</div>
+                <div class="kpi-foot">
+                  <span class="badge-real" id="rep-kpi-recharges-count">0 recargas</span>
+                  <span id="rep-kpi-new-users">0 nuevos registros</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- RANKING DE PRODUCTOS VISTOS VS VENDIDOS -->
+            <div class="report-split-grid">
+              <div class="report-subcard">
+                <h4>👁️ Productos Más Vistos en el Día</h4>
+                <div id="rep-top-viewed-list" class="report-mini-list"></div>
+              </div>
+              <div class="report-subcard">
+                <h4>🏆 Productos Más Vendidos en el Día</h4>
+                <div id="rep-top-sold-list" class="report-mini-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DESGLOSE DE FLUJO Y TRANSACCIONES DEL DÍA -->
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div class="panel-title">
+                <span>🕒</span> Bitácora Cronológica de Ventas & Recargas del Día
+                <span id="rep-tx-count-tag" class="tag">0 registros</span>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Hora Exacta</th>
+                    <th>Categoría</th>
+                    <th>Cliente & Teléfono</th>
+                    <th>Ciudad / Depto.</th>
+                    <th>Detalle / Productos</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="rep-day-transactions-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+
+        </section>
+
+        <!-- ================================================================
+             11. VISTA DE ADMINISTRACIÓN DE NOTIFICACIONES INTELIGENTES
+             ================================================================ -->
+        <section id="view-notifications" class="admin-view">
+          <!-- MOTOR AUTOMÁTICO POR COMPORTAMIENTO -->
+          <div class="card-panel">
+            <div class="panel-header-row">
+              <div>
+                <div class="panel-title">
+                  <span>🤖</span> Reglas Automáticas de Navegación (Edición en 1 Clic)
+                  <span id="notif-global-status-pill" class="tag" style="color: #34D399;">Motor Activo</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 Toca cualquier <strong>Nombre</strong>, <strong>Disparador</strong>, <strong>Tiempo</strong>, <strong>Título</strong>, <strong>Mensaje</strong> o <strong>Estado</strong> dentro de cada tarjeta para editarlo al instante.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <button type="button" id="btn-toggle-global-notifs" class="btn-secondary" onclick="toggleGlobalNotificationsEngine()">
+                  ⏸️ Pausar Motor Global
+                </button>
+                <button type="button" class="btn-admin-primary" onclick="addQuickNotificationRule()">
+                  <span>⚡ ➕ Nueva Regla en 1 Clic</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="admin-auto-rules-grid" class="notif-rules-grid">
+              <!-- Inyectado dinámicamente -->
+            </div>
+          </div>
+
+          <!-- ENVÍO INMEDIATO / SEGMENTADO + HISTORIAL DE ENTREGAS -->
+          <div class="report-split-grid">
+            <div class="card-panel" style="margin-bottom: 0;">
+              <div class="panel-title" style="margin-bottom: 0.5rem;">
+                <span>📲</span> Enviar Notificación Personalizada Ahora
+              </div>
+              <p style="font-size: 0.83rem; color: var(--text-muted); margin-bottom: 1.1rem;">
+                Envía una alerta push instantánea a todos los visitantes o segmentada por interés de marca, ciudad o cliente específico.
+              </p>
+              <form id="form-direct-notification" onsubmit="sendDirectCampaignFromAdmin(event)">
+                <div class="form-group-admin">
+                  <label>Audiencia / Segmentación *</label>
+                  <select id="direct-notif-target-type" onchange="handleDirectNotifTargetChange()">
+                    <option value="all">🌎 Todos los visitantes con notificaciones activas</option>
+                    <option value="brand_interest">👑 Usuarios que miraron una Marca / Producto</option>
+                    <option value="city">📍 Usuarios ubicados en una Ciudad específica</option>
+                    <option value="customer">👤 Usuario específico (Correo, Nombre o ID)</option>
+                  </select>
+                </div>
+                <div class="form-group-admin" id="direct-notif-target-val-group" style="display: none;">
+                  <label id="direct-notif-target-val-label">Valor del segmento *</label>
+                  <input type="text" id="direct-notif-target-value" placeholder="Ej: Milagros, Medellín, cliente@correo.com">
+                </div>
+                <div class="form-group-admin">
+                  <label>Título de la Alerta *</label>
+                  <input type="text" id="direct-notif-title" required placeholder="Ej: ✨ ¡Beneficio Exclusivo para ti hoy!">
+                </div>
+                <div class="form-group-admin">
+                  <label>Mensaje Personalizado *</label>
+                  <textarea id="direct-notif-body" rows="3" required placeholder="Hola {usuario}, vimos que te encantaron nuestros productos en {ciudad}. ¡Despacho inmediato hoy!"></textarea>
+                  <small style="color: var(--text-dim); display: block; margin-top: 4px;">Variables dinámicas disponibles: <code>{usuario}</code>, <code>{ciudad}</code></small>
+                </div>
+                <div class="form-group-admin">
+                  <label>Vincular a Producto al Tocar (Opcional)</label>
+                  <select id="direct-notif-product">
+                    <option value="">-- Solo abrir catálogo --</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn-admin-primary" style="width: 100%;">
+                  <span>🚀 Disparar Notificación en Tiempo Real</span>
+                </button>
+              </form>
+            </div>
+
+            <div class="card-panel" style="margin-bottom: 0;">
+              <div class="panel-header-row" style="margin-bottom: 0.85rem;">
+                <div class="panel-title">
+                  <span>📬</span> Historial de Alertas Entregadas
+                  <span id="notif-delivered-count-tag" class="tag">0</span>
+                </div>
+                <button type="button" class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;" onclick="clearNotificationDeliveryLog()">Limpiar Log</button>
+              </div>
+              <div id="admin-notif-delivery-log" class="notif-delivery-log-list">
+                <!-- Inyectado dinámicamente -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             12. VISTA DE PORTADA & PÁGINA PRINCIPAL (1-CLIC) + SERVIDOR & BACKUPS
+             ================================================================ -->
+        <section id="view-store-settings" class="admin-view">
+          <!-- EDITOR VISUAL DIRECTO EN 1 CLIC DE LA PÁGINA PRINCIPAL -->
+          <div class="card-panel" style="margin-bottom: 1.5rem; border-color: var(--admin-border);">
+            <div class="panel-header-row" style="margin-bottom: 1.15rem;">
+              <div>
+                <div class="panel-title">
+                  <span>🌸</span> Editor Directo en 1 Clic — Página Principal Vinculada en Vivo
+                  <span class="tag" style="color: #34D399;">⚡ Guardado Automático</span>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+                  💡 <strong>Sin formularios largos:</strong> Toca cualquier foto, texto, botón, número de WhatsApp, meta de envío gratis o cuenta de recarga para editarlo y verlo reflejado al instante en la tienda principal.
+                </p>
+              </div>
+              <div class="panel-actions-row">
+                <a href="../bloom%20bauty%20v6/index.html" id="settings-open-store-btn" target="_blank" class="btn-admin-primary" style="text-decoration: none;">
+                  <span>🌸 Ver Cambios en la Tienda</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- CONTENEDOR RENDERIZADO EN VIVO POR ADMIN.JS (ESPEJO DE LA TIENDA) -->
+            <div id="store-live-visual-editor"></div>
+          </div>
+
+          <!-- SECCIÓN COMPACTA Y ORGANIZADA: SEGURIDAD ADMIN, BACKUPS & SERVIDOR CLOUD -->
+          <details class="admin-system-collapsible" id="admin-system-cloud-details">
+            <summary class="admin-system-summary">
+              <div>
+                <strong>🔐 Seguridad de Acceso Admin, Copias de Seguridad (.JSON) &amp; Servidor Cloud-Ready</strong>
+                <small>Toca aquí para gestionar tu contraseña del panel, descargar/restaurar backups o conectar el servidor multipantalla</small>
+              </div>
+              <span class="summary-chevron">▾</span>
+            </summary>
+
+            <div style="margin-top: 1.25rem;">
+              <div class="card-panel" style="margin-bottom: 1.35rem;">
+                <div class="panel-header-row" style="margin-bottom: 1rem;">
+                  <div>
+                    <div class="panel-title">
+                      <span>💾</span> Backups Maestros &amp; Estado del Servidor
+                    </div>
+                  </div>
+                  <div class="panel-actions-row">
+                    <a href="servidor.html" target="_blank" class="btn-secondary" style="text-decoration: none;">
+                      🌐 Consola Web Servidor
+                    </a>
+                    <button type="button" class="btn-secondary" onclick="quickConnectLocalPythonServer()">
+                      ⚡ Autoconectar Local (:8080)
+                    </button>
+                    <button type="button" class="btn-admin-primary" onclick="testCloudServerConnection()">
+                      <span>🩺 Probar Salud</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div id="cloud-live-status-banner" class="cloud-status-banner status-local">
+                  <div class="cloud-status-main">
+                    <span class="cloud-status-indicator" id="cloud-status-dot">●</span>
+                    <div>
+                      <strong id="cloud-status-headline">Motor Local Sincronizado (BroadcastChannel + Storage)</strong>
+                      <p id="cloud-status-subtext">Tienda y Panel Admin conectados instantáneamente en este navegador.</p>
+                    </div>
+                  </div>
+                  <div class="cloud-metrics-strip">
+                    <div class="cloud-metric-chip">
+                      <small>Latencia API</small>
+                      <strong id="cloud-metric-latency">0.8 ms (Local)</strong>
+                    </div>
+                    <div class="cloud-metric-chip">
+                      <small>Catálogo</small>
+                      <strong id="cloud-metric-products">0 prod.</strong>
+                    </div>
+                    <div class="cloud-metric-chip">
+                      <small>Clientes VIP</small>
+                      <strong id="cloud-metric-customers">0 cuentas</strong>
+                    </div>
+                    <div class="cloud-metric-chip">
+                      <small>Pedidos</small>
+                      <strong id="cloud-metric-orders">0 reg.</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cloud-ops-grid">
+                  <button type="button" class="btn-secondary cloud-op-btn" onclick="exportFullDatabaseBackup()">
+                    <span>💾</span>
+                    <div>
+                      <strong>Descargar Backup Maestro (.JSON)</strong>
+                      <small>Copia completa de productos, usuarios, saldos y pedidos</small>
+                    </div>
+                  </button>
+                  <button type="button" class="btn-secondary cloud-op-btn" onclick="triggerImportFullDatabaseBackup()">
+                    <span>📂</span>
+                    <div>
+                      <strong>Restaurar Backup (.JSON)</strong>
+                      <small>Importar copia de seguridad y sincronizar tienda al instante</small>
+                    </div>
+                  </button>
+                  <button type="button" class="btn-secondary cloud-op-btn" onclick="pushDatabaseToCloudServer()">
+                    <span>⬆️</span>
+                    <div>
+                      <strong>Subir al Servidor (Push)</strong>
+                      <small>Enviar catálogo, saldos, ofertas y pedidos al backend</small>
+                    </div>
+                  </button>
+                  <button type="button" class="btn-secondary cloud-op-btn" onclick="pullDatabaseFromCloudServer()">
+                    <span>⬇️</span>
+                    <div>
+                      <strong>Descargar del Servidor (Pull)</strong>
+                      <small>Traer la última copia guardada en el servidor activo</small>
+                    </div>
+                  </button>
+                  <input type="file" id="cloud-backup-file-input" accept=".json,application/json" style="display: none;" onchange="handleImportFullDatabaseBackup(event)">
+                </div>
+              </div>
+
+              <div class="report-split-grid">
+                <div class="card-panel" style="margin-bottom: 0;">
+                  <div class="panel-title" style="margin-bottom: 0.65rem;">
+                    <span>🔑</span> Credenciales de Acceso al Panel Admin
+                  </div>
+                  <form id="form-store-settings" onsubmit="saveStoreSettings(event)">
+                    <div class="form-group-admin">
+                      <label>Correo / Usuario Administrador</label>
+                      <input type="email" id="setting-store-email" required>
+                    </div>
+                    <div class="form-group-admin">
+                      <label>Contraseña del Panel Admin</label>
+                      <div class="admin-pass-input-wrap">
+                        <input type="password" id="setting-admin-password" required>
+                        <button type="button" class="btn-admin-pass-toggle" onclick="toggleAdminPassVisibility('setting-admin-password', this)">👁️</button>
+                      </div>
+                    </div>
+                    <div class="form-group-admin">
+                      <label>URL Pública de la Tienda (Opcional)</label>
+                      <input type="url" id="setting-store-public-url" placeholder="https://tubloombeauty.netlify.app">
+                    </div>
+                    <button type="submit" class="btn-admin-primary" style="width: 100%;">
+                      <span>🔒 Actualizar Credenciales Admin</span>
+                    </button>
+                  </form>
+                </div>
+
+                <div class="card-panel" style="margin-bottom: 0;">
+                  <div class="panel-title" style="margin-bottom: 0.65rem;">
+                    <span>☁️</span> Endpoint Servidor REST (Opcional Multipantalla)
+                  </div>
+                  <form id="form-cloud-config" onsubmit="saveCloudConfigFromAdmin(event)">
+                    <div class="form-group-admin">
+                      <label>URL Base del Servidor Backend</label>
+                      <input type="url" id="cloud-endpoint-url" placeholder="Ej: http://localhost:8080 o https://api.tudominio.com">
+                    </div>
+                    <div class="form-group-admin">
+                      <label>API Key / Token (Opcional)</label>
+                      <div class="admin-pass-input-wrap">
+                        <input type="password" id="cloud-api-key" placeholder="sk_live_bloom_...">
+                        <button type="button" class="btn-admin-pass-toggle" onclick="toggleAdminPassVisibility('cloud-api-key', this)">👁️</button>
+                      </div>
+                    </div>
+                    <div class="form-group-admin">
+                      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-size: 0.88rem;">
+                        <input type="checkbox" id="cloud-remote-enabled" style="width: auto;">
+                        <span>Habilitar sincronización automática con este servidor</span>
+                      </label>
+                    </div>
+                    <button type="submit" class="btn-admin-primary" style="width: 100%;">
+                      <span>☁️ Guardar Conexión Cloud</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ======================================================================
+       MODALES DE CREACIÓN Y EDICIÓN
+       ====================================================================== -->
+
+  <!-- MODAL: PRODUCTO (CREAR / EDITAR PRECIO / FOTO / DETALLES) -->
+  <div id="modal-product" class="admin-modal-overlay">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <h3 id="modal-product-title">Añadir Nuevo Producto</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-product')">✕ Cerrar</button>
+      </div>
+      <form id="form-product" onsubmit="saveProductSubmit(event)">
+        <div class="admin-modal-body">
+          <input type="hidden" id="prod-form-id">
+          
+          <div class="form-group-admin">
+            <label>Nombre del Producto *</label>
+            <input type="text" id="prod-form-name" required placeholder="Ej: Shampoo de Cebolla 500ml">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Marca *</label>
+              <select id="prod-form-brand" onchange="handleModalBrandChange(this)">
+                <!-- Llenado dinámicamente -->
+              </select>
+              <input type="text" id="prod-form-new-brand" placeholder="Escribe el nombre de la nueva marca..." style="display: none; margin-top: 6px;">
+            </div>
+            <div class="form-group-admin">
+              <label>Categoría *</label>
+              <select id="prod-form-category" required>
+                <option value="Capilar">Cuidado Capilar</option>
+                <option value="Facial">Cuidado Facial</option>
+                <option value="Corporal">Cuidado Corporal</option>
+                <option value="Maquillaje">Maquillaje</option>
+                <option value="Kits & Combos">Kits & Combos</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Precio de Venta Actual (COP) *</label>
+              <input type="number" id="prod-form-price" required placeholder="Ej: 45000">
+            </div>
+            <div class="form-group-admin">
+              <label>Precio Regular / Anterior (Tachado en Oferta)</label>
+              <input type="number" id="prod-form-old-price" placeholder="Ej: 58000">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Distintivo / Badge (Opcional)</label>
+              <input type="text" id="prod-form-badge" placeholder="Ej: Top Ventas, -25% HOY, Recomendado">
+            </div>
+            <div class="form-group-admin">
+              <label>Ruta de Imagen *</label>
+              <input type="text" id="prod-form-image" required placeholder="imagenes/productos/prod-anyeluz-1.jpg">
+            </div>
+          </div>
+
+          <div class="form-group-admin">
+            <label>Descripción del Producto</label>
+            <textarea id="prod-form-desc" rows="3" placeholder="Beneficios, ingredientes y modo de uso..."></textarea>
+          </div>
+
+          <div class="form-group-admin">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="prod-form-active" checked style="width: auto;">
+              <span>Producto Activo y Visible en la Tienda</span>
+            </label>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-product')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: MARCA (CREAR / EDITAR / QUITAR) -->
+  <div id="modal-brand" class="admin-modal-overlay">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <h3 id="modal-brand-title">Añadir Nueva Marca</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-brand')">✕ Cerrar</button>
+      </div>
+      <form id="form-brand" onsubmit="saveBrandSubmit(event)">
+        <div class="admin-modal-body">
+          <input type="hidden" id="brand-form-id">
+          
+          <div class="form-group-admin">
+            <label>Nombre de la Marca *</label>
+            <input type="text" id="brand-form-name" required placeholder="Ej: L'Oréal Professionnel, Milagros, Kaba">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Categoría / Especialidad *</label>
+              <input type="text" id="brand-form-category" required placeholder="Ej: Cuidado Capilar & Alisados">
+            </div>
+            <div class="form-group-admin">
+              <label>Distintivo / Badge</label>
+              <input type="text" id="brand-form-badge" placeholder="Ej: Top Ventas, Oficial, Más Vendido">
+            </div>
+          </div>
+
+          <div class="form-group-admin">
+            <label>Eslogan o Frase Promocional</label>
+            <input type="text" id="brand-form-tagline" placeholder="Ej: Fórmulas botánicas para nutrición profunda">
+          </div>
+
+          <div class="form-group-admin">
+            <label>Descripción de la Marca</label>
+            <textarea id="brand-form-desc" rows="2" placeholder="Historia, origen y certificaciones de la marca..."></textarea>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Ruta del Logo</label>
+              <input type="text" id="brand-form-logo" placeholder="imagenes/marcas/milagros-logo.jpg">
+            </div>
+            <div class="form-group-admin">
+              <label>Ruta del Banner</label>
+              <input type="text" id="brand-form-banner" placeholder="imagenes/marcas/milagros-banner.jpg">
+            </div>
+          </div>
+
+          <div class="form-group-admin">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="brand-form-active" checked style="width: auto;">
+              <span>Marca Activa en la Tienda</span>
+            </label>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-brand')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">Guardar Marca</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: OFERTA (CREAR / EDITAR) -->
+  <div id="modal-offer" class="admin-modal-overlay">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <h3 id="modal-offer-title">Crear Nueva Oferta</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-offer')">✕ Cerrar</button>
+      </div>
+      <form id="form-offer" onsubmit="saveOfferSubmit(event)">
+        <div class="admin-modal-body">
+          <input type="hidden" id="offer-form-id">
+          
+          <div class="form-group-admin">
+            <label>Título de la Oferta *</label>
+            <input type="text" id="offer-form-title" required placeholder="Ej: Combo 2x1 Keratinas Orgánicas">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Porcentaje de Descuento (%)</label>
+              <input type="number" id="offer-form-discount" min="0" max="100" placeholder="Ej: 20">
+            </div>
+            <div class="form-group-admin">
+              <label>Cupón / Código Promocional</label>
+              <input type="text" id="offer-form-coupon" placeholder="Ej: BLOOM20, VERANO2026">
+            </div>
+          </div>
+
+          <div class="form-group-admin">
+            <label>Texto Promocional para la Barra Superior de la Tienda</label>
+            <input type="text" id="offer-form-banner" placeholder="Ej: 🔥 20% OFF en toda la línea Milagros solo por hoy!">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Marca que Aplica</label>
+              <select id="offer-form-brand">
+                <option value="Todas">Todas las Marcas</option>
+              </select>
+            </div>
+            <div class="form-group-admin">
+              <label>Fecha de Vencimiento</label>
+              <input type="text" id="offer-form-expires" placeholder="Ej: 31 de Diciembre de 2026">
+            </div>
+          </div>
+
+          <div class="form-group-admin">
+            <label>Descripción / Condiciones</label>
+            <textarea id="offer-form-desc" rows="2" placeholder="Válido hasta agotar existencias o pago contra entrega..."></textarea>
+          </div>
+
+          <div class="form-group-admin">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="offer-form-active" checked style="width: auto;">
+              <span>Activar Oferta Inmediatamente en la Tienda</span>
+            </label>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-offer')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">Guardar Oferta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RESEÑA (AÑADIR / VER) -->
+  <div id="modal-review" class="admin-modal-overlay">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <h3 id="modal-review-title">Registrar Reseña de Cliente Real</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-review')">✕ Cerrar</button>
+      </div>
+      <form id="form-review" onsubmit="saveReviewSubmit(event)">
+        <div class="admin-modal-body">
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Nombre y Apellido de la Clienta *</label>
+              <input type="text" id="review-form-author" required placeholder="Ej: Valentina Gómez">
+            </div>
+            <div class="form-group-admin">
+              <label>Ciudad y Departamento *</label>
+              <input type="text" id="review-form-city" required placeholder="Ej: Medellín, Antioquia">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Calificación (Estrellas de 1 a 5) *</label>
+              <select id="review-form-rating" required>
+                <option value="5">★★★★★ (5 Estrellas - Excelente)</option>
+                <option value="4">★★★★☆ (4 Estrellas - Muy Bueno)</option>
+                <option value="3">★★★☆☆ (3 Estrellas - Bueno)</option>
+                <option value="2">★★☆☆☆ (2 Estrellas - Regular)</option>
+                <option value="1">★☆☆☆☆ (1 Estrella - Malo)</option>
+              </select>
+            </div>
+            <div class="form-group-admin">
+              <label>Producto Comprado o Asunto</label>
+              <input type="text" id="review-form-subject" placeholder="Ej: Kit Protocolo Milagros">
+            </div>
+          </div>
+
+          <div class="form-group-admin">
+            <label>Testimonio / Comentario Real *</label>
+            <textarea id="review-form-comment" rows="3" required placeholder="Escribe el testimonio exacto de la clienta..."></textarea>
+          </div>
+
+          <div class="form-group-admin">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="review-form-verified" checked style="width: auto;">
+              <span>Marcar con insignia de 'Compra Verificada'</span>
+            </label>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-review')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">Publicar Reseña</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL RÁPIDO: CAMBIAR IMAGEN AL TOCARLA -->
+  <div id="modal-quick-image" class="admin-modal-overlay">
+    <div class="admin-modal-box" style="max-width: 480px;">
+      <div class="admin-modal-header">
+        <h3 id="modal-image-title">Cambiar Imagen</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-quick-image')">✕ Cerrar</button>
+      </div>
+      <form id="form-quick-image" onsubmit="saveQuickImageSubmit(event)">
+        <div class="admin-modal-body">
+          <input type="hidden" id="quick-image-target-type"> <!-- 'product' | 'brand' -->
+          <input type="hidden" id="quick-image-target-id">
+
+          <div style="text-align: center; margin-bottom: 1.25rem;">
+            <p id="quick-image-item-name" style="font-size: 0.95rem; font-weight: 700; color: #FFF; margin-bottom: 0.8rem;"></p>
+            <div style="width: 110px; height: 110px; margin: 0 auto; border: 2px solid var(--gold-primary); border-radius: 12px; overflow: hidden; box-shadow: var(--gold-glow); background: #000;">
+              <img id="quick-image-preview" src="" alt="Vista previa" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+          </div>
+
+          <!-- OPCIÓN 1: SUBIR ARCHIVO DESDE EL COMPUTADOR (APLICACIÓN AUTOMÁTICA EN 1 CLIC) -->
+          <div class="form-group-admin" style="background: rgba(212, 175, 55, 0.08); padding: 1rem; border-radius: 8px; border: 1px dashed var(--admin-border); margin-bottom: 1.2rem;">
+            <label style="color: var(--gold-light);">📁 Subir archivo desde tu computador o celular (1-Clic):</label>
+            <input type="file" id="quick-image-file-input" accept="image/*" onchange="handleQuickImageFileUpload(event)" style="background: transparent; border: none; padding: 0.4rem 0;">
+            <small style="color: #34D399; display: block; margin-top: 4px; font-weight: 600;">⚡ Al elegir la foto se optimiza y se aplica automáticamente en la tienda.</small>
+          </div>
+
+          <!-- OPCIÓN 2: PEGAR RUTA O URL -->
+          <div class="form-group-admin">
+            <label>O ingresa la ruta / enlace web de la imagen:</label>
+            <input type="text" id="quick-image-url-input" oninput="updateQuickImagePreview(this.value)" placeholder="Ej: imagenes/productos/prod-anyeluz-1.jpg o https://...">
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-quick-image')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">✓ Aplicar Nueva Imagen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADMINISTRAR / RECARGAR "TU SALDO" DE USUARIO -->
+  <div id="modal-customer-balance" class="admin-modal-overlay">
+    <div class="admin-modal-box" style="max-width: 500px;">
+      <div class="admin-modal-header">
+        <h3 id="modal-balance-title">💎 Administrar Tu Saldo</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-customer-balance')">✕ Cerrar</button>
+      </div>
+      <form id="form-customer-balance" onsubmit="saveCustomerBalanceModalSubmit(event)">
+        <div class="admin-modal-body">
+          <input type="hidden" id="balance-form-cust-id">
+          <input type="hidden" id="balance-form-mode" value="add">
+          
+          <div class="balance-customer-banner">
+            <span class="balance-banner-tag">Cliente Seleccionado</span>
+            <h4 id="balance-form-cust-name">--</h4>
+            <span id="balance-form-cust-phone">--</span>
+            <div class="balance-current-pill">
+              Saldo Actual: <strong id="balance-form-current-display">$0</strong>
+            </div>
+          </div>
+
+          <!-- SELECTOR DE MODO DE OPERACIÓN -->
+          <div class="balance-mode-tabs">
+            <button type="button" class="balance-mode-tab active" id="bal-tab-add" onclick="setBalanceModalMode('add')">
+              ➕ Recargar / Sumar
+            </button>
+            <button type="button" class="balance-mode-tab" id="bal-tab-subtract" onclick="setBalanceModalMode('subtract')">
+              ➖ Descontar
+            </button>
+            <button type="button" class="balance-mode-tab" id="bal-tab-set" onclick="setBalanceModalMode('set')">
+              🎯 Fijar Exacto
+            </button>
+          </div>
+
+          <div class="form-group-admin">
+            <label id="balance-amount-input-label">Monto a Sumar a Tu Saldo (COP) *</label>
+            <input type="number" id="balance-form-new-amount" min="0" step="1000" required placeholder="Ej: 50000" oninput="updateBalanceModalPreview()" style="font-size: 1.2rem; font-weight: 800; color: #FFF;">
+          </div>
+
+          <div class="balance-quick-chips">
+            <button type="button" class="btn-secondary" onclick="quickSelectBalanceAmount(10000)">$10.000</button>
+            <button type="button" class="btn-secondary" onclick="quickSelectBalanceAmount(20000)">$20.000</button>
+            <button type="button" class="btn-secondary" onclick="quickSelectBalanceAmount(50000)">$50.000</button>
+            <button type="button" class="btn-secondary" onclick="quickSelectBalanceAmount(100000)">$100.000</button>
+            <button type="button" class="btn-secondary" style="color: #F87171;" onclick="setBalanceZeroQuick()">En $0</button>
+          </div>
+
+          <div class="form-group-admin" style="margin-top: 0.85rem;">
+            <label>Concepto / Nota del Movimiento (Opcional)</label>
+            <input type="text" id="balance-form-note" placeholder="Ej: Recarga Nequi verificada / Bono VIP">
+          </div>
+
+          <!-- VISTA PREVIA EN TIEMPO REAL DEL NUEVO SALDO -->
+          <div class="balance-live-preview-box" id="balance-live-preview-box">
+            <div class="preview-line">
+              <span>Tu Saldo Actual:</span>
+              <span id="preview-current-val">$0</span>
+            </div>
+            <div class="preview-line">
+              <span id="preview-op-label">Recarga a aplicar:</span>
+              <strong id="preview-op-val" style="color: #34D399;">+$0</strong>
+            </div>
+            <div class="preview-line preview-final">
+              <span>Nuevo "Tu Saldo" Final:</span>
+              <strong id="preview-final-val">$0</strong>
+            </div>
+          </div>
+
+          <!-- HISTORIAL DE MOVIMIENTOS DEL CLIENTE -->
+          <div id="balance-modal-tx-wrap" class="balance-modal-tx-wrap" style="display: none;">
+            <div class="balance-tx-head">📋 Últimos Movimientos de este Usuario</div>
+            <div id="balance-modal-tx-list" class="balance-modal-tx-list"></div>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-customer-balance')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">💾 Aplicar a Tu Saldo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR NUEVO USUARIO DESDE PANEL ADMIN -->
+  <div id="modal-create-customer" class="admin-modal-overlay">
+    <div class="admin-modal-box" style="max-width: 520px;">
+      <div class="admin-modal-header">
+        <h3>➕ Registrar Nuevo Usuario</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-create-customer')">✕ Cerrar</button>
+      </div>
+      <form id="form-create-customer" onsubmit="saveNewCustomerFromAdmin(event)">
+        <div class="admin-modal-body">
+          <div class="form-group-admin">
+            <label>Nombre de Usuario *</label>
+            <input type="text" id="admin-cust-name" required placeholder="Ej: Laura Valentina Ríos">
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>WhatsApp / Teléfono *</label>
+              <input type="tel" id="admin-cust-phone" required placeholder="Ej: 3112345678">
+            </div>
+            <div class="form-group-admin">
+              <label>Correo Electrónico *</label>
+              <input type="email" id="admin-cust-email" required placeholder="cliente@gmail.com">
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Departamento *</label>
+              <input type="text" id="admin-cust-department" required placeholder="Ej: Antioquia">
+            </div>
+            <div class="form-group-admin">
+              <label>Ciudad / Municipio *</label>
+              <input type="text" id="admin-cust-city" required placeholder="Ej: Medellín">
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Contraseña de Acceso *</label>
+              <div class="admin-pass-input-wrap">
+                <input type="password" id="admin-cust-password" required minlength="6" placeholder="Mínimo 6 caracteres">
+                <button type="button" class="btn-admin-pass-toggle" onclick="toggleAdminPassVisibility('admin-cust-password', this)">👁️</button>
+              </div>
+            </div>
+            <div class="form-group-admin">
+              <label>Tu Saldo Inicial (COP)</label>
+              <input type="number" id="admin-cust-balance" min="0" step="1000" value="0" placeholder="0">
+            </div>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-create-customer')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">✨ Crear Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR Y CONFIRMAR PEDIDO MANUAL DESDE ADMIN -->
+  <div id="modal-manual-order" class="admin-modal-overlay">
+    <div class="admin-modal-box" style="max-width: 680px;">
+      <div class="admin-modal-header">
+        <h3>📦 Registrar y Confirmar Pedido Manual</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-manual-order')">✕ Cerrar</button>
+      </div>
+      <form id="form-manual-order" onsubmit="submitManualOrder(event)">
+        <div class="admin-modal-body">
+          <div class="form-group-admin" style="background: rgba(212,175,55,0.08); border: 1px solid var(--admin-border); padding: 0.9rem; border-radius: 10px;">
+            <label>Seleccionar Usuario Registrado (Opcional - Autocompleta datos)</label>
+            <select id="manual-order-customer-select" onchange="handleManualOrderCustomerSelect(this.value)">
+              <option value="">-- Cliente externo / escribir datos manualmente --</option>
+            </select>
+            <small id="manual-order-wallet-hint" style="display: block; margin-top: 6px; color: #34D399; font-weight: 600;"></small>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Nombre del Cliente *</label>
+              <input type="text" id="manual-order-name" required placeholder="Nombre completo">
+            </div>
+            <div class="form-group-admin">
+              <label>WhatsApp / Teléfono *</label>
+              <input type="tel" id="manual-order-phone" required placeholder="Ej: 3135143012">
+            </div>
+          </div>
+
+          <div class="form-grid-3">
+            <div class="form-group-admin">
+              <label>Departamento *</label>
+              <input type="text" id="manual-order-department" required placeholder="Ej: Cundinamarca">
+            </div>
+            <div class="form-group-admin">
+              <label>Ciudad *</label>
+              <input type="text" id="manual-order-city" required placeholder="Ej: Bogotá">
+            </div>
+            <div class="form-group-admin">
+              <label>Correo (Opcional)</label>
+              <input type="email" id="manual-order-email" placeholder="cliente@correo.com">
+            </div>
+          </div>
+
+          <div class="form-group-admin">
+            <label>Dirección de Entrega *</label>
+            <input type="text" id="manual-order-address" required placeholder="Calle / Carrera, Barrio, Apto o Punto de entrega">
+          </div>
+
+          <!-- PRODUCTOS DEL PEDIDO MANUAL -->
+          <div class="form-group-admin">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <label style="margin-bottom: 0;">Productos Adquiridos *</label>
+              <button type="button" class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; color: var(--gold-light); border-color: var(--admin-border);" onclick="addManualOrderProductRow()">
+                ➕ Añadir Otro Producto
+              </button>
+            </div>
+            <div id="manual-order-items-container" class="manual-order-items-container">
+              <!-- Filas dinámicas -->
+            </div>
+            <div class="manual-order-total-bar">
+              <span>Total del Pedido:</span>
+              <strong id="manual-order-total-display">$0 COP</strong>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Modalidad de Pago *</label>
+              <select id="manual-order-payment-mode">
+                <option value="Pago Directo / Transferencia">💳 Pago Directo / Nequi / Transferencia</option>
+                <option value="Efectivo / Contraentrega">💵 Efectivo / Contraentrega</option>
+                <option value="__WALLET__">💎 Descontar de "Tu Saldo" del Usuario</option>
+              </select>
+            </div>
+            <div class="form-group-admin">
+              <label>Estado Inicial del Pedido *</label>
+              <select id="manual-order-status">
+                <option value="Confirmado">✓ Confirmado (Listo para despacho)</option>
+                <option value="Por Despachar">⏳ Por Despachar</option>
+                <option value="Despachado">🚚 Despachado inmediatamente</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group-admin">
+            <label>Notas de Despacho / Referencia</label>
+            <input type="text" id="manual-order-notes" placeholder="Ej: Pedido tomado por WhatsApp, guía prioritaria...">
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-manual-order')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">✓ Confirmar y Registrar Pedido</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR / EDITAR REGLA AUTOMÁTICA DE NOTIFICACIÓN -->
+  <div id="modal-notification-rule" class="admin-modal-overlay">
+    <div class="admin-modal-box" style="max-width: 560px;">
+      <div class="admin-modal-header">
+        <h3 id="modal-notif-rule-title">🤖 Configurar Regla Automática</h3>
+        <button class="btn-secondary" style="padding: 0.3rem 0.6rem;" onclick="closeAdminModal('modal-notification-rule')">✕ Cerrar</button>
+      </div>
+      <form id="form-notification-rule" onsubmit="saveNotificationRuleFromForm(event)">
+        <div class="admin-modal-body">
+          <input type="hidden" id="notif-rule-id">
+          <div class="form-group-admin">
+            <label>Nombre Interno de la Regla *</label>
+            <input type="text" id="notif-rule-name" required placeholder="Ej: Alerta por Interés en Producto Capilar">
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Comportamiento Disparador *</label>
+              <select id="notif-rule-trigger" required>
+                <option value="product_view">👁️ Al mirar un Producto</option>
+                <option value="brand_interest">👑 Al explorar una Marca</option>
+                <option value="cart_idle">🛍️ Carrito con productos sin comprar</option>
+                <option value="welcome_optin">🌸 Al conceder permisos de entrada</option>
+              </select>
+            </div>
+            <div class="form-group-admin">
+              <label>Enfriamiento entre alertas (Minutos)</label>
+              <input type="number" id="notif-rule-cooldown" min="1" value="15" required>
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-group-admin">
+              <label>Mínimo de Vistas / Eventos</label>
+              <input type="number" id="notif-rule-count" min="1" value="2" required>
+            </div>
+            <div class="form-group-admin">
+              <label>Segundos de Interés Acumulados</label>
+              <input type="number" id="notif-rule-seconds" min="1" value="10" required>
+            </div>
+          </div>
+          <div class="form-group-admin">
+            <label>Título de la Notificación *</label>
+            <input type="text" id="notif-rule-title-tpl" required placeholder="✨ ¡{producto} sigue disponible para ti!">
+          </div>
+          <div class="form-group-admin">
+            <label>Cuerpo del Mensaje *</label>
+            <textarea id="notif-rule-body-tpl" rows="3" required placeholder="Hola {usuario}, notamos tu interés en {producto} de {marca} desde {ciudad}."></textarea>
+            <small style="color: var(--text-dim); display: block; margin-top: 4px;">Etiquetas inteligentes: <code>{usuario}</code>, <code>{producto}</code>, <code>{marca}</code>, <code>{ciudad}</code></small>
+          </div>
+          <div class="form-group-admin">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="notif-rule-active" checked style="width: auto;">
+              <span>Regla activa inmediatamente</span>
+            </label>
+          </div>
+        </div>
+        <div class="admin-modal-footer">
+          <button type="button" class="btn-secondary" onclick="closeAdminModal('modal-notification-rule')">Cancelar</button>
+          <button type="submit" class="btn-admin-primary">💾 Guardar Regla</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR DE NOTIFICACIONES TOAST DEL PANEL ADMIN -->
+  <div id="admin-toast-container" class="admin-toast-container"></div>
+
+  <!-- BACKDROP OVERLAY PARA MENÚ MÓVIL/TABLET -->
+  <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="toggleAdminSidebar(false)"></div>
+
+  <!-- SCRIPTS Y LÓGICA DEL PANEL ADMIN -->
+  <script>window.__BLOOM_PASSIVE_TELEMETRY__ = true;</script>
+  <script src="data.js?v=6.9.7"></script>
+  <script src="database.js?v=6.9.7"></script>
+  <script src="tracker.js?v=6.9.7"></script>
+  <script src="admin.js?v=6.9.7"></script>
+</body>
+</html>
