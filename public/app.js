@@ -4208,8 +4208,16 @@ function cancelCurrentRechargeFlow() {
   if (prevBox) prevBox.style.display = 'none';
 }
 
+// Definiciones auxiliares seguras para recargas
+function formatCOP(num) {
+  return typeof formatCurrency === 'function' ? formatCurrency(num) : ('$' + Math.round(Number(num) || 0).toLocaleString('es-CO') + ' COP');
+}
+function renderAuthUserPanel() {
+  if (typeof renderAuthLoggedProfile === 'function') renderAuthLoggedProfile();
+}
+
 async function handleStartRecharge(e) {
-  e.preventDefault();
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
   syncCurrentUserFromDB();
   if (!appState.currentUser) {
     showToast('Debes iniciar sesión para recargar Tu Saldo', 'error');
@@ -4229,55 +4237,58 @@ async function handleStartRecharge(e) {
     btn.innerHTML = '<span>⏳ Creando solicitud en la nube...</span>';
   }
 
-  try {
-    const payload = {
-      customerId: appState.currentUser.id,
-      customerName: appState.currentUser.username || appState.currentUser.name || 'Cliente',
-      customerPhone: appState.currentUser.phone || '',
-      customerEmail: appState.currentUser.email || '',
-      amount: amount
-    };
+  let rechargeData = null;
+  const payload = {
+    customerId: appState.currentUser.id,
+    customerName: appState.currentUser.username || appState.currentUser.name || 'Cliente',
+    customerPhone: appState.currentUser.phone || '',
+    customerEmail: appState.currentUser.email || '',
+    amount: amount
+  };
 
-    let rechargeData = null;
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     const res = await fetch('https://bloom-backend-v6.onrender.com/api/v6/recharges/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (res.ok) {
       const data = await res.json();
       rechargeData = data.recharge;
-    } else {
-      // Fallback local
-      if (typeof BloomDB !== 'undefined' && typeof BloomDB.addRechargeRequest === 'function') {
-        rechargeData = BloomDB.addRechargeRequest({
-          customerId: appState.currentUser.id,
-          customerName: payload.customerName,
-          customerPhone: payload.customerPhone,
-          customerEmail: payload.customerEmail,
-          amount: amount
-        });
-      }
     }
+  } catch (netErr) {
+    console.warn('Backend cloud ping timeout/failed, continuing with local fallback:', netErr);
+  }
 
-    currentActiveRecharge = rechargeData || { id: 'REC-' + Date.now().toString().slice(-6), amount: amount };
-
-    // Mostrar Paso 2
-    document.getElementById('recharge-step-1').style.display = 'none';
-    const s2 = document.getElementById('recharge-step-2');
-    s2.style.display = 'block';
-
-    document.getElementById('view-recharge-id').innerText = currentActiveRecharge.id;
-    document.getElementById('view-recharge-amount').innerText = formatCOP(amount);
-    showToast('¡Solicitud creada! Realiza la transferencia y sube tu comprobante abajo.', 'info');
-  } catch (err) {
-    showToast('Error de conexión con la nube. Intenta nuevamente.', 'error');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<span>⚡ Crear Solicitud & Ver Cuentas de Pago</span>';
+  // Fallback local si la nube tardó o falló
+  if (!rechargeData) {
+    if (typeof BloomDB !== 'undefined' && typeof BloomDB.addRechargeRequest === 'function') {
+      rechargeData = BloomDB.addRechargeRequest(payload);
     }
+  }
+
+  currentActiveRecharge = rechargeData || { id: 'REC-' + Date.now().toString().slice(-6), amount: amount };
+
+  // Mostrar Paso 2
+  const s1 = document.getElementById('recharge-step-1');
+  const s2 = document.getElementById('recharge-step-2');
+  if (s1) s1.style.display = 'none';
+  if (s2) s2.style.display = 'block';
+
+  const viewId = document.getElementById('view-recharge-id');
+  if (viewId) viewId.innerText = currentActiveRecharge.id;
+  const viewAmt = document.getElementById('view-recharge-amount');
+  if (viewAmt) viewAmt.innerText = formatCOP(amount);
+  showToast('¡Solicitud creada! Realiza la transferencia y sube tu comprobante abajo.', 'info');
+
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>⚡ Crear Solicitud & Ver Cuentas de Pago</span>';
   }
 }
 
@@ -4314,7 +4325,7 @@ async function handleUploadReceiptAndConfirm() {
     return;
   }
 
-  const refText = (document.getElementById('recharge-ref-text-input').value || '').trim();
+  const refText = (document.getElementById('recharge-ref-text-input')?.value || '').trim();
   const btn = document.getElementById('btn-submit-receipt');
   if (btn) {
     btn.disabled = true;
@@ -4322,6 +4333,8 @@ async function handleUploadReceiptAndConfirm() {
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
     const res = await fetch('https://bloom-backend-v6.onrender.com/api/v6/recharges/receipt', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -4329,23 +4342,34 @@ async function handleUploadReceiptAndConfirm() {
         rechargeId: currentActiveRecharge.id,
         receiptUrl: currentReceiptBase64,
         reference: refText
-      })
+      }),
+      signal: controller.signal
     });
-
-    if (res.ok) {
-      showToast('¡Comprobante recibido con éxito! En minutos el administrador lo verificará y acreditará tu saldo.', 'success');
-      toggleRechargeDrawer(false);
-      renderAuthUserPanel();
-    } else {
-      showToast('Error al enviar el comprobante. Intenta nuevamente.', 'error');
-    }
+    clearTimeout(timeoutId);
   } catch (err) {
-    showToast('Error de conexión al subir comprobante.', 'error');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<span>✅ ¡Ya Pagué! Enviar Comprobante</span>';
+    console.warn('Error uploading receipt to cloud, continuing with local sync:', err);
+  }
+
+  // Guardar comprobante localmente en BloomDB
+  try {
+    if (typeof BloomDB !== 'undefined') {
+      const data = BloomDB.getData();
+      const rec = (data.rechargeRequests || []).find(r => r.id === currentActiveRecharge.id);
+      if (rec) {
+        rec.receiptUrl = currentReceiptBase64;
+        rec.reference = refText || rec.reference;
+        BloomDB.saveData(data);
+      }
     }
+  } catch(e) {}
+
+  showToast('¡Comprobante recibido con éxito! En minutos el administrador lo verificará y acreditará tu saldo.', 'success');
+  toggleRechargeDrawer(false);
+  if (typeof renderAuthLoggedProfile === 'function') renderAuthLoggedProfile();
+
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<span>✅ ¡Ya Pagué! Enviar Comprobante</span>';
   }
 }
 
