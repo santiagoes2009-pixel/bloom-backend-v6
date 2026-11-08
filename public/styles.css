@@ -2414,33 +2414,22 @@ img {
 @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
 
-/* BARRA DE NAVEGACION FLOTANTE INFERIOR PARA CELULARES (MOBILE BOTTOM NAV) */
+/* BARRA DE NAVEGACION FLOTANTE INFERIOR PARA CELULARES (MOBILE BOTTOM NAV - ELIMINADA) */
 .mobile-bottom-nav {
-  display: none;
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 @media (max-width: 768px) {
-  /* Espacio inferior para que la barra flotante no tape el contenido */
   body {
-    padding-bottom: 74px;
+    padding-bottom: 0 !important;
   }
 
   .mobile-bottom-nav {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 62px;
-    background: rgba(14, 11, 9, 0.97);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(212, 175, 55, 0.35);
-    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.42);
-    z-index: 1400;
-    justify-content: space-around;
-    align-items: center;
-    padding: 0 0.35rem;
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   .mobile-nav-item {
@@ -4968,30 +4957,13 @@ body.entry-gate-locked {
 
 @media (max-width: 960px) {
   body {
-    padding-bottom: 88px !important;
+    padding-bottom: 0 !important;
   }
 
   .mobile-bottom-nav {
-    display: flex !important;
-    position: fixed !important;
-    bottom: 12px !important;
-    left: 14px !important;
-    right: 14px !important;
-    max-width: 480px !important;
-    margin: 0 auto !important;
-    height: 66px !important;
-    border-radius: 28px !important;
-    background: linear-gradient(135deg, rgba(28, 22, 17, 0.72) 0%, rgba(14, 11, 9, 0.85) 100%) !important;
-    backdrop-filter: blur(28px) saturate(190%) contrast(108%) !important;
-    -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(108%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    border-top: 1.5px solid rgba(212, 175, 55, 0.65) !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 25px rgba(212, 175, 55, 0.16), inset 0 1px 2px rgba(255, 255, 255, 0.28) !important;
-    z-index: 1400 !important;
-    justify-content: space-around !important;
-    align-items: center !important;
-    padding: 0 0.5rem !important;
-    overflow: hidden !important;
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 
   .glass-dock-shimmer {
