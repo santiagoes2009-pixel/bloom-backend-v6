@@ -1854,21 +1854,15 @@ body {
   filter: blur(3px);
 }
 
-/* Estado cuando el elemento salió por ARRIBA y el usuario vuelve a SUBIR el scroll */
-.bb-anim.bb-above-viewport[data-bb-dir="left"] {
-  transform: translate3d(calc(var(--bb-dist-x) * -0.85), -18px, 0);
-  filter: blur(2px);
-}
-
-.bb-anim.bb-above-viewport[data-bb-dir="right"] {
-  transform: translate3d(calc(var(--bb-dist-x) * 0.85), -18px, 0);
-  filter: blur(2px);
-}
-
+/* Estado cuando el elemento ya fue visto por el usuario: Mantener siempre visible sin parpadeos */
+.bb-anim.bb-above-viewport,
+.bb-anim.bb-above-viewport[data-bb-dir="left"],
+.bb-anim.bb-above-viewport[data-bb-dir="right"],
 .bb-anim.bb-above-viewport[data-bb-dir="up"],
 .bb-anim.bb-above-viewport[data-bb-dir="zoom"] {
-  transform: translate3d(0, -22px, 0) scale(0.98);
-  filter: blur(2px);
+  opacity: 1 !important;
+  transform: translate3d(0, 0, 0) scale(1) !important;
+  filter: none !important;
 }
 
 /* Estado activo en pantalla (tanto al bajar como al subir) */
