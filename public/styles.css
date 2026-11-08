@@ -5512,3 +5512,53 @@ a[href*="netlify.com"] {
   position: absolute !important;
   left: -9999px !important;
 }
+
+
+/* ==========================================================================
+   RESTAURAR BOTÓN RECARGA: SOLO ICONO DE CARTERA CIRCULAR BOUTIQUE
+   ========================================================================== */
+.btn-quick-recharge-header .recharge-btn-text,
+.recharge-btn-text,
+span.recharge-btn-text {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  font-size: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+.btn-quick-recharge-header {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: linear-gradient(135deg, #FFDE00 0%, #F59E0B 100%) !important;
+  color: #0F0F11 !important;
+  border: 1px solid rgba(254, 240, 138, 0.85) !important;
+  box-shadow: 0 3px 12px rgba(255, 222, 0, 0.4) !important;
+  cursor: pointer !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease !important;
+  flex-shrink: 0 !important;
+}
+
+.btn-quick-recharge-header:hover {
+  transform: translateY(-2px) scale(1.08) !important;
+  box-shadow: 0 6px 18px rgba(255, 222, 0, 0.6) !important;
+  background: linear-gradient(135deg, #FBBF24 0%, #D97706 100%) !important;
+}
+
+.btn-quick-recharge-header i,
+.btn-quick-recharge-header .fa-wallet {
+  font-size: 1.15rem !important;
+  color: #0F0F11 !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+}
