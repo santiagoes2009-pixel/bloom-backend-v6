@@ -5490,3 +5490,25 @@ body.entry-gate-locked {
   border: none;
   cursor: pointer;
 }
+
+/* OCULTAR CUALQUIER RASTRO DE BADGE NETLIFY */
+#netlify-badge,
+.netlify-badge,
+[data-netlify-badge],
+[class*="netlify-badge"],
+[id*="netlify-badge"],
+iframe[title*="Netlify"],
+iframe[src*="netlify"],
+.netlify-feedback,
+#netlify-drawer,
+.netlify-drawer,
+a[href*="netlify.com"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
