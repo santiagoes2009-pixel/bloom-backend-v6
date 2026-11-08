@@ -2010,7 +2010,7 @@ async function renderCheckoutBalanceCheck() {
   let verifyResult = null;
   if (typeof BloomDB !== 'undefined' && BloomDB.cloud && typeof BloomDB.cloud.verifyUserBalance === 'function') {
     verifyResult = await BloomDB.cloud.verifyUserBalance({
-      customerId: appState.currentUser.id,
+      customerId: appState.currentUser.id || appState.currentUser.phone || appState.currentUser.email || ('user_' + Date.now()),
       requiredAmount: total
     });
   }
