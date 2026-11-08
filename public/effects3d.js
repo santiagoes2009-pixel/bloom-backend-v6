@@ -29,7 +29,7 @@
   }
 
   // --------------------------------------------------------------------------
-  // 1. PANTALLA DE CARGA DE LUJO CON PRECARGA INTELIGENTE DE ACTIVOS CRÍTICOS
+  // 1. PANTALLA DE CARGA DE LUJO CON PRECARGA INTELIGENTE (CIRCULITO DE CARGA)
   // --------------------------------------------------------------------------
   function initBloomPreloader() {
     const preloader = document.getElementById('bloom-preloader');
@@ -41,21 +41,35 @@
       return;
     }
 
-    if (bar) bar.style.width = '100%';
-    if (statusLabel) statusLabel.textContent = '¡Bienvenida!';
+    let progress = 20;
+    if (bar) bar.style.width = '20%';
+    if (statusLabel) statusLabel.textContent = 'Cargando...';
 
-    // Ocultar preloader inmediatamente para entrada instantánea sin demoras
-    preloader.classList.add('preloader-hidden');
-    preloader.style.opacity = '0';
-    preloader.style.pointerEvents = 'none';
-    document.body.classList.add('bloom-loaded');
-    refreshScrollAnimations();
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 25) + 18;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(interval);
+        if (bar) bar.style.width = '100%';
+        if (statusLabel) statusLabel.textContent = '¡Bienvenida!';
 
-    setTimeout(() => {
-      if (preloader && preloader.parentNode) {
-        preloader.style.display = 'none';
+        setTimeout(() => {
+          preloader.classList.add('preloader-hidden');
+          preloader.style.opacity = '0';
+          preloader.style.pointerEvents = 'none';
+          document.body.classList.add('bloom-loaded');
+          if (typeof refreshScrollAnimations === 'function') refreshScrollAnimations();
+
+          setTimeout(() => {
+            if (preloader && preloader.parentNode) {
+              preloader.style.display = 'none';
+            }
+          }, 500);
+        }, 300);
+      } else {
+        if (bar) bar.style.width = progress + '%';
       }
-    }, 120);
+    }, 160);
   }
 
   // --------------------------------------------------------------------------

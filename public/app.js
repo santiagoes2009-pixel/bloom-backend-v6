@@ -3397,56 +3397,23 @@ function saveEntryPermissions(perms) {
 function initEntryPermissionsFlow() {
   document.body.classList.remove('entry-gate-locked');
 
-  // DISPARO INMEDIATO NATIVO: UBICACIÓN Y NOTIFICACIONES NATIVAS
-  // El navegador muestra su cuadro con opciones ("Permitir siempre", "Permitir mientras se navega", etc.)
-  const triggerNativePermissions = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' + lat + '&longitude=' + lon + '&localityLanguage=es')
-            .then(r => r.json())
-            .then(data => {
-              const city = data.city || data.locality || 'Colombia';
-              const dept = data.principalSubdivision || '';
-              saveEntryPermissions({
-                completed: true,
-                city: city,
-                department: dept,
-                lat: lat,
-                lon: lon,
-                locationGranted: true,
-                notificationsGranted: ('Notification' in window && Notification.permission === 'granted')
-              });
-            })
-            .catch(() => {});
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
-      );
-    }
+  // Ocultar cualquier modal de selección de ubicación y permisos de entrada
+  const entryModal = document.getElementById('entry-permissions-modal');
+  if (entryModal) {
+    entryModal.style.display = 'none';
+    entryModal.remove();
+  }
 
-    if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-      try {
-        Notification.requestPermission().then(perm => {
-          console.log('[Bloom] Permiso notificaciones:', perm);
-        }).catch(() => {});
-      } catch (e) {}
-    }
-  };
-
-  // Disparo inmediato automático
-  triggerNativePermissions();
-
-  // Y fallback en el primer clic o toque por si el navegador exige interacción de usuario para notificaciones
-  const onFirstInteraction = () => {
-    triggerNativePermissions();
-    window.removeEventListener('click', onFirstInteraction);
-    window.removeEventListener('touchstart', onFirstInteraction);
-  };
-  window.addEventListener('click', onFirstInteraction, { once: true, passive: true });
-  window.addEventListener('touchstart', onFirstInteraction, { once: true, passive: true });
+  // Establecer permisos completados por defecto sin pedirle nada al usuario
+  saveEntryPermissions({
+    completed: true,
+    city: 'Colombia',
+    department: 'Nacional',
+    lat: null,
+    lon: null,
+    locationGranted: true,
+    notificationsGranted: false
+  });
 }
 
 
