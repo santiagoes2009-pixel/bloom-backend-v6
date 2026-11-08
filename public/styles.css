@@ -5562,3 +5562,103 @@ span.recharge-btn-text {
   line-height: 1 !important;
   margin: 0 !important;
 }
+
+
+/* ==========================================================================
+   ESTÉTICA BOUTIQUE DE ALTA GAMA: VIDRIO ESMERILADO & TARJETAS LUXURY
+   ========================================================================== */
+.product-item-card,
+.product-card,
+.brand-card-item,
+.goal-card-3d,
+.review-luxury-card,
+.value-single-card {
+  background: rgba(22, 19, 16, 0.78) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid rgba(212, 175, 55, 0.24) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(253, 230, 138, 0.08) inset !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease !important;
+  overflow: hidden !important;
+}
+
+.product-item-card:hover,
+.product-card:hover,
+.brand-card-item:hover,
+.goal-card-3d:hover {
+  transform: translateY(-8px) scale(1.015) !important;
+  border-color: rgba(253, 230, 138, 0.65) !important;
+  box-shadow: 0 22px 45px rgba(0, 0, 0, 0.65), 0 0 28px rgba(212, 175, 55, 0.28) !important;
+}
+
+.product-thumb-box {
+  background: radial-gradient(circle at 50% 45%, #231E18 0%, #13100D 100%) !important;
+  border-radius: 14px !important;
+  margin: 10px 10px 0 10px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(212, 175, 55, 0.15) !important;
+  position: relative !important;
+}
+
+.product-thumb-img,
+.product-thumb-box img {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.product-item-card:hover .product-thumb-img,
+.product-item-card:hover .product-thumb-box img {
+  transform: scale(1.07) !important;
+}
+
+.product-brand-tagline {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.22) 0%, rgba(184, 150, 40, 0.08) 100%) !important;
+  border: 1px solid rgba(253, 230, 138, 0.45) !important;
+  color: #FDE68A !important;
+  padding: 3px 9px !important;
+  border-radius: 6px !important;
+  font-weight: 700 !important;
+  font-size: 0.72rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  display: inline-block !important;
+}
+
+.product-item-name,
+.product-card-title {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  font-size: 0.98rem !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.product-price-val,
+.symmetrical-price-main,
+.product-price {
+  color: #FFDE00 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 14px rgba(255, 222, 0, 0.3) !important;
+}
+
+.btn-card-add-cart,
+.btn-add-to-cart-vip,
+.btn-hero-primary {
+  position: relative !important;
+  overflow: hidden !important;
+  background: linear-gradient(135deg, #FFDE00 0%, #D4AF37 50%, #B89628 100%) !important;
+  color: #0F0F11 !important;
+  font-weight: 800 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35) !important;
+  border: 1px solid rgba(254, 240, 138, 0.6) !important;
+  transition: all 0.25s ease !important;
+}
+
+.btn-card-add-cart:hover,
+.btn-add-to-cart-vip:hover,
+.btn-hero-primary:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(255, 222, 0, 0.5) !important;
+  background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%) !important;
+}
