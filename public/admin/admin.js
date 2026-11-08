@@ -152,14 +152,40 @@ function refreshDataFromDB() {
   updateNavCounters();
 }
 
-function refreshSessionsFromStorage() {
+async function refreshSessionsFromStorage() {
+  // 1. Sincronizar desde la base de datos descargada de la nube
+  if (typeof BloomDB !== 'undefined' && typeof BloomDB.getData === 'function') {
+    const liveDB = BloomDB.getData();
+    if (liveDB && Array.isArray(liveDB.visitors) && liveDB.visitors.length > 0) {
+      currentSessions = liveDB.visitors;
+    }
+  }
+
+  // 2. Consulta directa y en vivo a la API en la nube (Render + Supabase)
   try {
-    const key = (typeof BloomDB !== 'undefined' && BloomDB.KEYS && BloomDB.KEYS.SESSIONS_KEY)
-      ? BloomDB.KEYS.SESSIONS_KEY
-      : 'bloom_beauty_real_sessions_v1';
-    currentSessions = JSON.parse(localStorage.getItem(key) || '[]');
-  } catch (e) {
-    currentSessions = [];
+    const res = await fetch('https://bloom-backend-v6.onrender.com/api/v6/visitors/live');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.visitors)) {
+        currentSessions = data.visitors;
+        const navBadge = document.getElementById('nav-count-live-sessions');
+        if (navBadge && data.stats) {
+          navBadge.innerText = `${data.stats.live || 0} En Vivo`;
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 3. Fallback a almacenamiento local si no hay conexión
+  if (!currentSessions || currentSessions.length === 0) {
+    try {
+      const key = (typeof BloomDB !== 'undefined' && BloomDB.KEYS && BloomDB.KEYS.SESSIONS_KEY)
+        ? BloomDB.KEYS.SESSIONS_KEY
+        : 'bloom_beauty_real_sessions_v1';
+      currentSessions = JSON.parse(localStorage.getItem(key) || '[]');
+    } catch (e) {
+      currentSessions = [];
+    }
   }
 }
 
@@ -2267,7 +2293,9 @@ function renderTelemetryView() {
   }
 
   container.innerHTML = filtered.map((s) => {
-    const isLive = (now - (s.lastActiveTimestamp || s.entryTimestamp)) < 120000;
+    const isLive = s.isOnline !== undefined
+      ? Boolean(s.isOnline)
+      : (now - (s.lastSeen || s.lastActiveTimestamp || s.entryTimestamp || 0)) < 180000;
     const dev = s.device || {};
     const loc = s.location || {};
     const userObj = s.user || {};
@@ -2278,14 +2306,14 @@ function renderTelemetryView() {
       : (s.brandsExplored && typeof s.brandsExplored === 'object'
           ? Object.entries(s.brandsExplored).map(([bName, count]) => `${bName} (${count}x)`)
           : []);
-    const actions = s.actionsHistory || [];
+    const actions = s.actions || s.actionsHistory || [];
 
-    const displayCity = userObj.city || perms.city || loc.city || 'Ciudad no detectada';
-    const displayDept = userObj.department || perms.department || loc.region || '';
+    const displayCity = userObj.city || perms.city || loc.city || 'Colombia';
+    const displayDept = userObj.department || perms.department || loc.department || loc.region || '';
     const wppPhone = userObj.phone ? formatAdminWhatsAppNumber(userObj.phone) : '';
     const targetForAlert = userObj.authenticated
       ? (userObj.email || userObj.name || '')
-      : (displayCity !== 'Ciudad no detectada' ? displayCity : '');
+      : (displayCity !== 'Colombia' ? displayCity : '');
     const targetMode = userObj.authenticated ? 'customer' : (targetForAlert ? 'city' : 'all');
 
     return `
@@ -2294,14 +2322,14 @@ function renderTelemetryView() {
           <div>
             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
               <span class="${isLive ? 'session-badge-active' : 'session-badge-closed'}">
-                ${isLive ? '● CONECTADO EN VIVO' : 'SESIÓN FINALIZADA'}
+                ${isLive ? '● CONECTADO EN VIVO' : 'SESIÓN RECIENTE'}
               </span>
-              <span class="fp-pill">HUELLA: ${escapeAdminHtml(dev.fingerprintId || 'FP-N/A')}</span>
-              <span class="tag" style="background: ${perms.locationGranted ? 'rgba(16,185,129,0.14)' : 'rgba(255,255,255,0.06)'}; color: ${perms.locationGranted ? '#34D399' : 'var(--text-muted)'};">
-                📍 Ubicación: ${perms.locationGranted ? 'Activa' : 'Manual/Pendiente'}
+              <span class="fp-pill">ID: ${escapeAdminHtml(String(s.sessionId || s.id || dev.fingerprintId || 'VIS-LIVE').slice(-8).toUpperCase())}</span>
+              <span class="tag" style="background: rgba(16,185,129,0.14); color: #34D399;">
+                📍 ${escapeAdminHtml(displayCity)}${displayDept ? ', ' + escapeAdminHtml(displayDept) : ''}
               </span>
-              <span class="tag" style="background: ${perms.notificationsGranted ? 'rgba(212,175,55,0.16)' : 'rgba(255,255,255,0.06)'}; color: ${perms.notificationsGranted ? 'var(--gold-light)' : 'var(--text-muted)'};">
-                🔔 Alertas: ${perms.notificationsGranted ? 'Permitidas' : 'Sin activar'}
+              <span class="tag" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">
+                ${dev.isMobile ? '📱 Celular' : '💻 Computador'} • ${escapeAdminHtml(dev.browser || 'Web')}
               </span>
             </div>
 
@@ -2309,7 +2337,8 @@ function renderTelemetryView() {
               <div class="telemetry-user-identity-banner">
                 <div>
                   <strong style="color:#FFF; font-size:1.05rem;">🔑 ${escapeAdminHtml(userObj.name || userObj.username)}</strong>
-                  <span style="color: var(--gold-light); font-size:0.84rem; margin-left: 8px;">${escapeAdminHtml(userObj.email || '')}</span>
+                  <span style="color: #34D399; font-size:0.84rem; font-weight:700; margin-left: 8px;">💎 Saldo: ${formatCurrency(userObj.balance || 0)}</span>
+                  ${userObj.email ? `<span style="color: var(--text-muted); font-size:0.82rem; margin-left: 8px;">(${escapeAdminHtml(userObj.email)})</span>` : ''}
                 </div>
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                   ${userObj.phone ? `<a href="https://wa.me/${wppPhone}" target="_blank" class="btn-table-action primary" style="margin:0;">💬 ${escapeAdminHtml(userObj.phone)}</a>` : ''}
@@ -2318,7 +2347,8 @@ function renderTelemetryView() {
               </div>
             ` : `
               <div style="margin-bottom: 8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <span style="color: var(--text-muted); font-size: 0.9rem;">👤 Visitante explorando catálogo (Sin iniciar sesión aún)</span>
+                <strong style="color: #E5E7EB; font-size: 0.96rem;">🌐 ${escapeAdminHtml(userObj.name || ('Visitante #' + String(s.sessionId || s.id || '').slice(-5).toUpperCase()))}</strong>
+                <span style="color: var(--text-muted); font-size: 0.82rem;">(Invitado explorando la tienda)</span>
                 <button type="button" class="btn-table-action neutral" style="padding: 0.25rem 0.65rem; font-size: 0.76rem;" onclick="quickNotifyVisitor('${escapeAttr(targetMode)}', '${escapeAttr(targetForAlert)}', '${escapeAttr((prods[0] && prods[0].name) || '')}')">🔔 Enviar Alerta</button>
               </div>
             `}

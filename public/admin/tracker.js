@@ -299,6 +299,60 @@
         BloomDB.touchPing();
       }
     } catch (e) {}
+
+    // Transmisión en tiempo real a la nube (Backend Render + Supabase)
+    syncSessionToCloud(false);
+  }
+
+  const CLOUD_VISITORS_PING = 'https://bloom-backend-v6.onrender.com/api/v6/visitors/ping';
+  let lastCloudPingTimestamp = 0;
+
+  function syncSessionToCloud(force = false, actionOverride = '', productObj = null, isCart = false) {
+    if (typeof fetch === 'undefined') return;
+    const now = Date.now();
+    if (!force && (now - lastCloudPingTimestamp) < 4000) return;
+    lastCloudPingTimestamp = now;
+
+    try {
+      const u = currentSession.user || {};
+      const loc = currentSession.location || {};
+      const perms = currentSession.permissions || {};
+      const dev = currentSession.device || {};
+
+      const payload = {
+        sessionId: sessionId,
+        user: (u && u.authenticated) ? {
+          id: u.id,
+          name: u.name,
+          phone: u.phone,
+          email: u.email,
+          balance: Number(u.balance || 0),
+          authenticated: true
+        } : null,
+        location: {
+          city: loc.city || perms.city || 'Colombia',
+          department: loc.region || perms.department || 'Nacional',
+          lat: loc.lat || perms.lat || null,
+          lon: loc.lon || perms.lon || null
+        },
+        device: {
+          isMobile: Boolean(dev.isMobile),
+          os: dev.os || 'Web',
+          browser: dev.browser || 'Navegador Web',
+          screen: dev.screenResolution || ''
+        },
+        action: actionOverride || (currentSession.actionsHistory && currentSession.actionsHistory[0]?.action) || 'Navegando en la tienda',
+        productViewed: productObj || null,
+        isCartAction: Boolean(isCart),
+        url: window.location.hash || window.location.pathname || '/'
+      };
+
+      fetch(CLOUD_VISITORS_PING, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
+    } catch (e) {}
   }
 
   // 5. Detección de Geolocalización IP de respaldo

@@ -583,6 +583,11 @@ app.post('/api/v6/sync/push', async (req, res) => {
   }
 });
 
+// ============================================================================
+// REGISTRO EN MEMORIA DE VISITANTES Y SESIONES EN VIVO
+// ============================================================================
+const activeVisitorsMap = new Map();
+
 // 8. Sincronización Global: PULL EN VIVO DIRECTO DE TABLAS SUPABASE
 app.get('/api/v6/sync/pull', async (req, res) => {
   try {
@@ -645,11 +650,23 @@ app.get('/api/v6/sync/pull', async (req, res) => {
         dateFormatted: r.created_at ? new Date(r.created_at).toLocaleString('es-CO') : 'Reciente'
       }));
 
+      // Obtener visitantes para sincronización
+      const nowSync = Date.now();
+      const allVisitorsSync = Array.from(activeVisitorsMap.values()).map(v => {
+        const isOnline = (nowSync - v.lastSeen) < (3 * 60 * 1000);
+        return Object.assign({}, v, {
+          isOnline: isOnline,
+          statusText: isOnline ? '🟢 En Línea Ahora' : `Hace ${Math.round((nowSync - v.lastSeen) / 60000)} min`
+        });
+      });
+
       const mergedDatabase = Object.assign({}, baseSnapshot, {
         customers: liveCustomers,
         orders: liveOrders,
         rechargeRequests: liveRecharges,
-        transactions: txRes.data || []
+        transactions: txRes.data || [],
+        visitors: allVisitorsSync,
+        sessions: allVisitorsSync
       });
 
       return res.json({
@@ -666,6 +683,155 @@ app.get('/api/v6/sync/pull', async (req, res) => {
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// 9. REGISTRO DE VISITANTES EN VIVO: Ping de entrada y navegación
+app.post('/api/v6/visitors/ping', (req, res) => {
+  try {
+    const body = req.body || {};
+    const sessionId = String(body.sessionId || req.ip || `vis_${Date.now()}`).trim();
+    const now = Date.now();
+    const todayKey = new Date().toLocaleDateString('en-CA');
+
+    let visitor = activeVisitorsMap.get(sessionId) || {
+      id: sessionId,
+      sessionId: sessionId,
+      firstSeen: now,
+      entryDateFormatted: new Date(now).toLocaleString('es-CO', { timeZone: 'America/Bogota' }),
+      dayKey: todayKey,
+      actions: [],
+      productsViewed: [],
+      cartActionsCount: 0
+    };
+
+    visitor.lastSeen = now;
+    visitor.lastSeenFormatted = new Date(now).toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+    visitor.durationSeconds = Math.max(0, Math.round((now - visitor.firstSeen) / 1000));
+    visitor.ip = req.ip || req.headers['x-forwarded-for'] || '';
+
+    // Datos del usuario (si está registrado)
+    if (body.user && (body.user.id || body.user.phone)) {
+      visitor.user = {
+        id: body.user.id || '',
+        name: body.user.name || 'Cliente Registrado',
+        phone: body.user.phone || '',
+        email: body.user.email || '',
+        balance: Number(body.user.balance || 0),
+        authenticated: true
+      };
+    } else if (!visitor.user) {
+      visitor.user = {
+        name: `Visitante #${sessionId.slice(-5).toUpperCase()}`,
+        authenticated: false
+      };
+    }
+
+    // Ubicación
+    if (body.location) {
+      visitor.location = {
+        city: body.location.city || (visitor.location && visitor.location.city) || 'Colombia',
+        department: body.location.department || (visitor.location && visitor.location.department) || 'Nacional',
+        lat: body.location.lat || null,
+        lon: body.location.lon || null
+      };
+    } else if (!visitor.location) {
+      visitor.location = { city: 'Colombia', department: 'Nacional' };
+    }
+
+    // Dispositivo
+    if (body.device) {
+      visitor.device = {
+        isMobile: Boolean(body.device.isMobile),
+        deviceType: body.device.isMobile ? 'Celular' : 'Computador',
+        os: body.device.os || 'Desconocido',
+        browser: body.device.browser || 'Navegador Web',
+        screen: body.device.screen || ''
+      };
+    }
+
+    // Acción
+    if (body.action) {
+      const actObj = {
+        action: String(body.action).slice(0, 150),
+        time: new Date(now).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'America/Bogota' }),
+        timestamp: now
+      };
+      visitor.actions.unshift(actObj);
+      if (visitor.actions.length > 20) visitor.actions.pop();
+    }
+
+    // Producto visto
+    if (body.productViewed && body.productViewed.name) {
+      const p = body.productViewed;
+      const exists = visitor.productsViewed.some(x => x.id === p.id);
+      if (!exists) {
+        visitor.productsViewed.push({
+          id: p.id,
+          name: p.name,
+          brand: p.brand || '',
+          price: Number(p.price || 0),
+          viewedAt: new Date(now).toLocaleTimeString('es-CO', { timeZone: 'America/Bogota' })
+        });
+      }
+    }
+
+    if (body.isCartAction) {
+      visitor.cartActionsCount++;
+    }
+
+    visitor.currentUrl = body.url || visitor.currentUrl || '/';
+    activeVisitorsMap.set(sessionId, visitor);
+
+    // Limpieza de sesiones con más de 48 horas
+    if (activeVisitorsMap.size > 1000) {
+      const cutoff = now - (48 * 60 * 60 * 1000);
+      for (const [k, v] of activeVisitorsMap.entries()) {
+        if (v.lastSeen < cutoff) activeVisitorsMap.delete(k);
+      }
+    }
+
+    return res.json({ success: true, isLive: true, visitorId: sessionId });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10. CONSULTA EN VIVO DE VISITANTES (Para el Panel Admin)
+app.get('/api/v6/visitors/live', (req, res) => {
+  try {
+    const now = Date.now();
+    const todayKey = new Date().toLocaleDateString('en-CA');
+    const allVisitors = Array.from(activeVisitorsMap.values()).map(v => {
+      const isOnline = (now - v.lastSeen) < (3 * 60 * 1000);
+      return Object.assign({}, v, {
+        isOnline: isOnline,
+        statusText: isOnline ? '🟢 En Línea Ahora' : `Hace ${Math.max(1, Math.round((now - v.lastSeen) / 60000))} min`
+      });
+    });
+
+    allVisitors.sort((a, b) => {
+      if (a.isOnline && !b.isOnline) return -1;
+      if (!a.isOnline && b.isOnline) return 1;
+      return b.lastSeen - a.lastSeen;
+    });
+
+    const liveCount = allVisitors.filter(v => v.isOnline).length;
+    const todayCount = allVisitors.filter(v => v.dayKey === todayKey).length;
+    const authCount = allVisitors.filter(v => v.user && v.user.authenticated).length;
+
+    return res.json({
+      success: true,
+      stats: {
+        total: allVisitors.length,
+        live: liveCount,
+        today: todayCount,
+        authenticated: authCount
+      },
+      visitors: allVisitors
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
