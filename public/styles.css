@@ -4568,13 +4568,13 @@ body.entry-gate-locked {
   .persistent-floating-cart-btn {
     left: 14px;
     right: auto;
-    bottom: 76px;
+    bottom: 18px;
     padding: 0.58rem 0.9rem;
   }
   .floating-whatsapp-btn {
-    right: 16px !important;
+    right: 18px !important;
     left: auto !important;
-    bottom: 76px !important;
+    bottom: 18px !important;
     width: 56px !important;
     height: 56px !important;
     z-index: 9000 !important;
