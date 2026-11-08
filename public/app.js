@@ -2450,20 +2450,6 @@ async function submitCheckoutOrder(event) {
     }
     renderCart();
 
-    // 🎁 RECOMPENSA CASHBACK 5% EN CARTERA BLOOM
-    let cashbackEarned = 0;
-    try {
-      if (confirmedOrder.total > 0 && appState.currentUser && appState.currentUser.id) {
-        cashbackEarned = Math.round(confirmedOrder.total * 0.05);
-        if (cashbackEarned > 0 && typeof BloomDB !== 'undefined' && typeof BloomDB.creditBalance === 'function') {
-          BloomDB.creditBalance(appState.currentUser.id, cashbackEarned, `Cashback 5% por compra VIP #${confirmedOrder.id}`);
-          if (typeof renderAuthLoggedProfile === 'function') renderAuthLoggedProfile();
-        }
-      }
-    } catch(e) {
-      console.warn('Cashback error:', e);
-    }
-
     const receiptBox = document.getElementById('checkout-success-receipt-box');
     if (receiptBox) {
       receiptBox.innerHTML = `
@@ -2472,7 +2458,6 @@ async function submitCheckoutOrder(event) {
           <div><span>Hora exacta:</span> <strong>${escapeStoreHtml(confirmedOrder.exactTime || '')}</strong></div>
           ${confirmedOrder.discountAmount > 0 ? `<div><span>Ahorro Cupón (${escapeStoreHtml(confirmedOrder.couponCode || '')}):</span> <strong style="color:#047857;">-${formatCurrency(confirmedOrder.discountAmount)}</strong></div>` : ''}
           <div><span>Total pagado:</span> <strong>${formatCurrency(confirmedOrder.total)}</strong></div>
-          ${cashbackEarned > 0 ? `<div><span>🎁 Cashback Ganado (+5%):</span> <strong style="color:#D4AF37;">+${formatCurrency(cashbackEarned)}</strong></div>` : ''}
           <div><span>Saldo disponible:</span> <strong style="color:#047857;">${formatCurrency(purchaseRes.newBalance)}</strong></div>
           <div style="grid-column: 1 / -1;"><span>Destino:</span> <strong>${escapeStoreHtml(delivery.address)} — ${escapeStoreHtml(delivery.city)}, ${escapeStoreHtml(delivery.department)}</strong></div>
         </div>
@@ -2482,11 +2467,6 @@ async function submitCheckoutOrder(event) {
     unlockAndRestoreBtn();
     goToCheckoutStep(5);
     showToast('✅ Tu pedido será despachado en breve', 'success');
-    if (cashbackEarned > 0) {
-      setTimeout(() => {
-        showToast(`🎁 ¡Felicidades! Ganaste ${formatCurrency(cashbackEarned)} de Cashback acreditados en tu Cartera Bloom`, 'success');
-      }, 1400);
-    }
   } finally {
     window.isSubmittingCheckoutLock = false;
   }
