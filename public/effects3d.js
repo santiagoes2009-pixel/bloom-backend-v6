@@ -241,30 +241,18 @@
     }
 
     ioInstance = new IntersectionObserver((entries) => {
-      const vh = window.innerHeight || document.documentElement.clientHeight || 800;
-
       entries.forEach((entry) => {
         const el = entry.target;
         if (entry.isIntersecting) {
           el.classList.remove('bb-above-viewport');
           el.classList.add('bb-in-view');
-        } else {
-          const rect = entry.boundingClientRect;
-          // Histeresis para evitar parpadeos en el borde exacto de la pantalla:
-          // Si salió completamente por arriba (usuario bajó), preparar re-entrada al subir.
-          if (rect.bottom <= -12) {
-            el.classList.remove('bb-in-view');
-            el.classList.add('bb-above-viewport');
-          } else if (rect.top >= vh + 12) {
-            // Si salió completamente por abajo (usuario subió), preparar re-entrada al bajar.
-            el.classList.remove('bb-in-view');
-            el.classList.remove('bb-above-viewport');
-          }
+          // Una vez visible, mantenerlo siempre visible para evitar parpadeos o bucles
+          if (ioInstance) ioInstance.unobserve(el);
         }
       });
     }, {
-      threshold: [0, 0.08],
-      rootMargin: '15px 0px -25px 0px'
+      threshold: 0.02,
+      rootMargin: '40px 0px 40px 0px'
     });
 
     refreshScrollAnimations();

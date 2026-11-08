@@ -4268,12 +4268,8 @@ body.entry-gate-locked {
 }
 
 .floating-whatsapp-pulse {
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 2px solid rgba(37, 211, 102, 0.52);
-  animation: wppPulseRing 2.4s infinite ease-out;
-  pointer-events: none;
+  display: none !important;
+  animation: none !important;
 }
 
 @keyframes wppPulseRing {
