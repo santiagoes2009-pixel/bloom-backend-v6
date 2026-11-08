@@ -848,13 +848,18 @@ app.get('*', (req, res, next) => {
 app.listen(PORT, () => {
   console.log(`🌸 Bloom Beauty Cloud Server v6 activo y blindado en puerto ${PORT}`);
 
-  // AUTO-KEEP-ALIVE: Previene que Render se duerma en el plan gratuito
+  // AUTO-KEEP-ALIVE 24/7: Previene que Render se duerma en el plan gratuito
   const https = require('https');
-  setInterval(() => {
+  const keepAlivePing = () => {
     try {
       https.get('https://bloom-backend-v6.onrender.com/api/v6/health', (res) => {
-        console.log(`[Auto-Keep-Alive] Ping interno completado. Status: ${res.statusCode}`);
-      }).on('error', () => {});
+        console.log(`[Auto-Keep-Alive 24/7] Ping completado con éxito. Status: ${res.statusCode} | ${new Date().toISOString()}`);
+      }).on('error', (err) => {
+        console.warn(`[Auto-Keep-Alive] Nota: ${err.message}`);
+      });
     } catch (e) {}
-  }, 10 * 60 * 1000); // Cada 10 minutos
+  };
+  // Ejecutar ping inmediato al iniciar y luego cada 7 minutos
+  setTimeout(keepAlivePing, 10000);
+  setInterval(keepAlivePing, 7 * 60 * 1000);
 });

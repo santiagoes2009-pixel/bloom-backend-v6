@@ -1,3 +1,19 @@
+
+function notifyRechargeWhatsApp(reqId) {
+  const requests = (typeof BloomDB !== 'undefined' && BloomDB.getRechargeRequests) ? BloomDB.getRechargeRequests() : [];
+  const req = requests.find(r => String(r.id) === String(reqId));
+  if (!req) return;
+  const rawPhone = String(req.customerPhone || req.userPhone || req.phone || '').replace(/\D/g, '');
+  const cleanPhone = rawPhone.length === 10 ? '57' + rawPhone : rawPhone;
+  const name = req.customerName || req.userName || 'Hermosa Clienta';
+  const amountStr = typeof formatCOP === 'function' ? formatCOP(req.amount) : ('$' + (req.amount || 0));
+
+  const text = '¡Hola ' + name + '! ✨🌸\n\nTe confirmamos que tu recarga de *' + amountStr + '* ha sido *aprobada y acreditada* con éxito en tu Cartera Bloom Beauty 💎.\n\nYa puedes ingresar a la tienda y realizar tus compras con saldo disponible:\n👉 https://bloombeauty-oficial.netlify.app\n\n¡Muchas gracias por tu confianza en Bloom Beauty! 💖✨';
+  const url = 'https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
+  if (typeof showAdminToast === 'function') showAdminToast('💬 Abriendo chat de WhatsApp para notificar a ' + name + '...', 'info');
+}
+
 // ============================================================================
 // BLOOM BEAUTY - PANEL DE ADMINISTRACIÓN VIP (ADMIN.JS)
 // Conexión y control total 100% en tiempo real con la tienda Bloom Beauty.
@@ -3575,6 +3591,9 @@ function renderRechargesTable() {
               ✕
             </button>
           ` : `
+            <button type="button" class="btn-whatsapp-notify" onclick="notifyRechargeWhatsApp('${escapeAttr(r.id)}')" style="background:#25D366; color:#064E3B; border:1px solid #10B981; font-weight:700; font-size:0.8rem; padding:0.38rem 0.72rem; border-radius:6px; cursor:pointer; margin-right:6px;" title="Avisar a la clienta por WhatsApp">
+              💬 Avisar WhatsApp
+            </button>
             <button type="button" class="btn-table-action neutral" onclick="deleteRechargeAction('${escapeAttr(r.id)}')" title="Quitar del historial">
               🗑️ Limpiar
             </button>
@@ -3624,7 +3643,14 @@ function approveRechargeAction(reqId) {
   refreshDataFromDB();
   renderCustomersTable();
   if (res && res.success) {
-    showAdminToast(`💎 ¡Recarga abonada en 1 clic! Nuevo Tu Saldo de ${res.customer.name}: ${formatCOP(res.customer.balance)}`, 'success');
+    showAdminToast(`💎 ¡Recarga abonada en 1 clic! Nuevo Saldo de ${res.customer.name}: ${formatCOP(res.customer.balance)}`, 'success');
+    if (req.customerPhone || req.userPhone || req.phone) {
+      setTimeout(() => {
+        if (confirm(`¿Deseas abrir WhatsApp para avisar a ${res.customer.name} que su saldo de ${formatCOP(req.amount)} ya está activo?`)) {
+          notifyRechargeWhatsApp(reqId);
+        }
+      }, 400);
+    }
   } else {
     showAdminToast((res && res.message) || 'No fue posible aprobar esta solicitud', 'error');
   }

@@ -1,0 +1,24 @@
+{
+  "name": "Bloom Beauty | Cosmética & Cuidado Capilar",
+  "short_name": "Bloom Beauty",
+  "description": "Boutique multimarca #1 en Colombia: Milagros, Kaba, Anyeluz, La Poción, Skala y más fórmulas 100% originales.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0D0A08",
+  "theme_color": "#12100E",
+  "icons": [
+    {
+      "src": "imagenes/logo-bloom-beauty.webp",
+      "sizes": "192x192 512x512",
+      "type": "image/webp",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "imagenes/logo-bloom-beauty.png",
+      "sizes": "800x800",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
