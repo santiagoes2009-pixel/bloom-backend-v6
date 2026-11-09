@@ -45,6 +45,28 @@ function initApp() {
   checkUrlHash();
   window.addEventListener('hashchange', checkUrlHash);
 
+  // Sincronización Cloud-First en vivo con Supabase
+  if (typeof BloomDB !== 'undefined' && BloomDB.cloud && typeof BloomDB.cloud.pullSnapshot === 'function') {
+    BloomDB.cloud.pullSnapshot().then((pullRes) => {
+      if (pullRes && pullRes.success) {
+        loadDataFromStorage();
+        renderApp();
+        renderReviewsDynamic();
+      }
+    }).catch(() => {});
+  }
+
+  // Verificación y validación de saldo del cliente contra la nube al cargar
+  if (appState.currentUser && appState.currentUser.id && typeof BloomDB !== 'undefined' && BloomDB.cloud && typeof BloomDB.cloud.verifyUserBalance === 'function') {
+    BloomDB.cloud.verifyUserBalance({ customerId: appState.currentUser.id }).then((vRes) => {
+      if (vRes && vRes.success && typeof vRes.balance === 'number') {
+        appState.currentUser.balance = vRes.balance;
+        saveCustomerSession(appState.currentUser);
+        updateAuthCircleState();
+      }
+    }).catch(() => {});
+  }
+
   const handleRealTimeSync = () => {
     syncCurrentUserFromDB();
     loadDataFromStorage();
@@ -305,9 +327,8 @@ function showToast(message, type = 'normal') {
 function renderApp() {
   renderStoreInfo();
   renderActiveOffersAndPromo();
-  renderBrandSelectDropdowns();
+  // renderBrandSelectDropdowns retirado (sin dropdown select en HTML)
   renderBrandsGrid();
-  renderProductsGrid();
   if (appState.selectedBrandId === '__ALL__') {
     openAllProductsCatalog(false);
   } else if (appState.selectedBrandId && appState.catalogMode === 'brand') {
@@ -326,49 +347,12 @@ function renderApp() {
 let currentBannerCouponCode = '';
 
 function renderActiveOffersAndPromo() {
-  const info = appState.storeInfo || {};
-  const topBar = document.getElementById('top-announcement-bar');
-  const promoElem = document.getElementById('store-promo-text');
-  const badgeLabel = document.getElementById('promo-badge-hot-label');
-  const couponBtn = document.getElementById('promo-active-coupon-btn');
   const showcaseSec = document.getElementById('active-offers-showcase');
   const scroller = document.getElementById('active-offers-scroller');
 
   const activeOffers = (typeof BloomDB !== 'undefined' && typeof BloomDB.getOffers === 'function')
     ? (BloomDB.getOffers() || []).filter(o => o && o.active !== false)
     : [];
-
-  const leadOffer = activeOffers[0] || null;
-  currentBannerCouponCode = leadOffer && leadOffer.couponCode ? String(leadOffer.couponCode).trim().toUpperCase() : '';
-
-  if (topBar) {
-    const shouldShowBar = info.promoActive !== false;
-    topBar.style.display = shouldShowBar ? '' : 'none';
-  }
-
-  if (promoElem) {
-    if (info.useCustomPromoText && info.promoAnnouncement) {
-      promoElem.innerText = info.promoAnnouncement;
-      if (badgeLabel) badgeLabel.innerText = '✨ OFICIAL VIP';
-    } else if (leadOffer && (leadOffer.bannerText || leadOffer.title)) {
-      promoElem.innerText = leadOffer.bannerText || `${leadOffer.title}${leadOffer.discountPercent ? ' • ' + leadOffer.discountPercent + '% OFF' : ''}`;
-      if (badgeLabel) {
-        badgeLabel.innerText = leadOffer.discountPercent ? `🔥 -${leadOffer.discountPercent}% HOY` : '🔥 PROMO ACTIVA';
-      }
-    } else if (info.promoAnnouncement) {
-      promoElem.innerText = info.promoAnnouncement;
-      if (badgeLabel) badgeLabel.innerText = '✨ OFICIAL VIP';
-    }
-  }
-
-  if (couponBtn) {
-    if (currentBannerCouponCode) {
-      couponBtn.style.display = 'inline-flex';
-      couponBtn.innerText = `🎟️ Usar Cupón: ${currentBannerCouponCode}`;
-    } else {
-      couponBtn.style.display = 'none';
-    }
-  }
 
   if (showcaseSec && scroller) {
     if (activeOffers.length === 0) {
@@ -402,12 +386,6 @@ function renderActiveOffersAndPromo() {
   }
 }
 
-function applyActiveBannerCoupon() {
-  if (currentBannerCouponCode) {
-    applyCouponCodeDirect(currentBannerCouponCode);
-  }
-}
-
 function applyCouponCodeDirect(code) {
   const clean = String(code || '').trim().toUpperCase();
   if (!clean) return;
@@ -427,16 +405,6 @@ function applyCouponCodeDirect(code) {
 function renderStoreInfo() {
   const info = appState.storeInfo;
   if (!info) return;
-
-  // 1. Barra de Anuncios Superior
-  const topBar = document.getElementById('top-announcement-bar');
-  if (topBar) {
-    topBar.style.display = (info.promoActive === false) ? 'none' : '';
-  }
-  const promoElem = document.getElementById('store-promo-text');
-  if (promoElem && info.promoAnnouncement) {
-    promoElem.innerText = info.promoAnnouncement;
-  }
 
   // 2. Identidad & Header
   if (info.logo) {
@@ -474,10 +442,7 @@ function renderStoreInfo() {
   const phone = String(info.phone || '3135143012').replace(/\D/g, '') || '3135143012';
   const cleanIntlPhone = phone.startsWith('57') && phone.length > 10 ? phone : `57${phone}`;
   const defaultWppHref = `https://wa.me/${cleanIntlPhone}?text=${encodeURIComponent('Hola Bloom Beauty 🌸 Quisiera recibir atención personalizada.')}`;
-  const headerWpp = document.getElementById('header-wpp-btn');
-  if (headerWpp) {
-    headerWpp.href = `https://wa.me/${cleanIntlPhone}`;
-  }
+  
   const floatingWpp = document.getElementById('floating-whatsapp-btn');
   if (floatingWpp) {
     floatingWpp.href = defaultWppHref;
@@ -543,16 +508,6 @@ function renderStoreInfo() {
         `;
       }).join('');
     }
-  }
-
-  // Insignia flotante Hero
-  if (info.floatingBadge) {
-    const flIcon = document.getElementById('floating-glass-icon');
-    if (flIcon && info.floatingBadge.icon) flIcon.innerText = info.floatingBadge.icon;
-    const flTitle = document.getElementById('floating-glass-title');
-    if (flTitle && info.floatingBadge.title) flTitle.innerText = info.floatingBadge.title;
-    const flDesc = document.getElementById('floating-glass-desc');
-    if (flDesc && info.floatingBadge.desc) flDesc.innerText = info.floatingBadge.desc;
   }
 
   // 4. Misión y Visión
@@ -1209,121 +1164,6 @@ function createProductCardElement(product) {
   return card;
 }
 
-function renderProductsGrid() {
-  const container = document.getElementById('all-products-grid');
-  const paginationContainer = document.getElementById('catalog-pagination-container');
-  if (!container) return;
-
-  let filtered = appState.products.filter(p => p.active !== false);
-
-  // Filtro por marca en el catálogo general
-  if (appState.catalogBrandFilter && appState.catalogBrandFilter !== 'all') {
-    filtered = filtered.filter(p => p.brandId === appState.catalogBrandFilter || (p.brandName && p.brandName.toLowerCase() === appState.catalogBrandFilter.toLowerCase()));
-  }
-
-  // Filtro por categoría inteligente
-  if (appState.activeCategory && appState.activeCategory !== 'Todos') {
-    const activeCat = appState.activeCategory.toLowerCase();
-    filtered = filtered.filter(p => {
-      const pCat = (p.category || '').toLowerCase();
-      if (activeCat === 'capilar') {
-        return pCat.includes('capilar') || pCat.includes('kits') || pCat.includes('alisado') || pCat.includes('rizos');
-      }
-      if (activeCat === 'facial') return pCat.includes('facial');
-      if (activeCat === 'corporal') return pCat.includes('corporal');
-      if (activeCat === 'maquillaje') return pCat.includes('maquillaje');
-      if (activeCat === 'alisado') return pCat.includes('alisado');
-      if (activeCat === 'rizos') return pCat.includes('rizos');
-      if (activeCat === 'kits & combos' || activeCat === 'kits') {
-        return pCat.includes('kits') || pCat.includes('combo') || p.name.toLowerCase().includes('kit ') || p.name.toLowerCase().includes('dúo');
-      }
-      return pCat.includes(activeCat);
-    });
-  }
-
-  // Búsqueda inteligente con soporte de alias (ej. 'caba' busca también 'kaba')
-  if (appState.searchQuery) {
-    const rawQ = appState.searchQuery.toLowerCase();
-    const isCaba = rawQ.includes('caba');
-    filtered = filtered.filter(p => {
-      const nameMatch = p.name.toLowerCase().includes(rawQ) || (isCaba && p.name.toLowerCase().includes('kaba'));
-      const brandMatch = (p.brandName && p.brandName.toLowerCase().includes(rawQ)) || (isCaba && p.brandName && p.brandName.toLowerCase().includes('kaba'));
-      const descMatch = (p.description && p.description.toLowerCase().includes(rawQ)) || (isCaba && p.description && p.description.toLowerCase().includes('kaba'));
-      const catMatch = (p.category && p.category.toLowerCase().includes(rawQ));
-      return nameMatch || brandMatch || descMatch || catMatch;
-    });
-  }
-
-  container.innerHTML = '';
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="empty-catalog-msg">
-        <span class="icon">🔍</span>
-        <h3>No se encontraron productos coincidentes</h3>
-        <p>Intenta con otra palabra clave o selecciona otra categoría o marca.</p>
-      </div>
-    `;
-    if (paginationContainer) paginationContainer.innerHTML = '';
-    return;
-  }
-
-  // Paginación diferida (24 productos por tanda para velocidad máxima)
-  const totalFiltered = filtered.length;
-  const visibleCount = Math.min(appState.page * appState.pageSize, totalFiltered);
-  const visibleProducts = filtered.slice(0, visibleCount);
-
-  visibleProducts.forEach(product => {
-    container.appendChild(createProductCardElement(product));
-  });
-
-  // Renderizar controles de paginación
-  if (paginationContainer) {
-    if (visibleCount < totalFiltered) {
-      const remaining = totalFiltered - visibleCount;
-      const nextBatch = Math.min(appState.pageSize, remaining);
-      paginationContainer.innerHTML = `
-        <p class="pagination-info">Mostrando <strong>${visibleCount}</strong> de <strong>${totalFiltered}</strong> productos principales</p>
-        <button class="btn-load-more-products" onclick="loadMoreCatalogProducts()">
-          <span>📦 Cargar Más Productos (${nextBatch} más)</span>
-        </button>
-      `;
-    } else if (totalFiltered > appState.pageSize) {
-      paginationContainer.innerHTML = `
-        <p class="pagination-info" style="color: var(--color-text-muted);">
-          ✨ Has visto todos los <strong>${totalFiltered}</strong> productos principales
-        </p>
-      `;
-    } else {
-      paginationContainer.innerHTML = '';
-    }
-  }
-}
-
-// Cargar siguiente tanda de productos del catálogo
-function loadMoreCatalogProducts() {
-  appState.page += 1;
-  renderProductsGrid();
-}
-
-function renderBrandSelectDropdowns() {
-  const filterSelect = document.getElementById('filter-brand-select');
-  if (filterSelect) {
-    const currentVal = filterSelect.value || 'all';
-    const activeProducts = appState.products.filter(p => p.active !== false);
-    filterSelect.innerHTML = `<option value="all">🌸 Todas las Marcas (${activeProducts.length})</option>`;
-    appState.brands.filter(b => b.active !== false).forEach(b => {
-      const count = activeProducts.filter(p => p.brandId === b.id || (p.brandName && p.brandName.toLowerCase() === b.name.toLowerCase())).length;
-      const opt = document.createElement('option');
-      opt.value = b.id;
-      opt.innerText = `${b.name} (${count})`;
-      filterSelect.appendChild(opt);
-    });
-    if (currentVal && Array.from(filterSelect.options).some(o => o.value === currentVal)) {
-      filterSelect.value = currentVal;
-    }
-  }
-}
 
 // Modal de vista previa rápida optimizado y sincronizado con estado de autenticación
 function openQuickPreviewModal(productId) {
@@ -1425,6 +1265,7 @@ function addToCart(productId) {
   }
 
   const product = appState.products.find(p => String(p.id) === String(productId));
+  if (!product) return;
   if (!product) return;
 
   const existing = appState.cart.find(item => String(item.id) === String(productId));
@@ -1567,9 +1408,6 @@ function removeCartCoupon() {
 function renderCart() {
   const headerCountEl = document.getElementById('header-cart-count');
   const drawerCountEl = document.getElementById('mobile-drawer-cart-count');
-  const floatingCountEl = document.getElementById('floating-cart-count');
-  const floatingTotalLabelEl = document.getElementById('floating-cart-total-label');
-  const floatingBtnEl = document.getElementById('persistent-floating-cart-btn');
   const itemsContainer = document.getElementById('cart-items-container');
   const totalPriceElem = document.getElementById('cart-total-price');
   const shippingMsgElem = document.getElementById('cart-shipping-msg');
@@ -1592,17 +1430,6 @@ function renderCart() {
 
   if (headerCountEl) headerCountEl.innerText = totalItems;
   if (drawerCountEl) drawerCountEl.innerText = totalItems;
-  if (floatingCountEl) floatingCountEl.innerText = totalItems;
-  if (floatingTotalLabelEl) {
-    if (!isAuthenticated) {
-      floatingTotalLabelEl.innerText = 'Iniciar sesión';
-    } else {
-      floatingTotalLabelEl.innerText = formatCurrency(totalPrice);
-    }
-  }
-  if (floatingBtnEl) {
-    floatingBtnEl.classList.toggle('has-items', totalItems > 0);
-  }
 
   if (couponInput && appState.appliedCouponCode && !couponInput.value) {
     couponInput.value = appState.appliedCouponCode;
@@ -2331,16 +2158,25 @@ function openCheckoutModal(items, total, orderSource = 'cart') {
 
 function buySingleViaWhatsApp(productId) {
   toggleMobileMenu(false);
-  if (!appState.currentUser || !appState.currentUser.id) {
-    openAuthModal();
-    return;
-  }
   const product = appState.products.find(p => String(p.id) === String(productId));
   if (!product) return;
   const singleItem = Object.assign({}, product, {
     quantity: 1,
     price: Math.max(0, Number(product.price) || 0)
   });
+  if (!appState.currentUser || !appState.currentUser.id) {
+    appState.pendingOrder = {
+      items: [singleItem],
+      subtotal: singleItem.price,
+      discountAmount: 0,
+      couponCode: '',
+      total: singleItem.price,
+      orderSource: 'single'
+    };
+    resumeCheckoutAfterAuth = true;
+    openAuthModal();
+    return;
+  }
   openCheckoutModal([singleItem], singleItem.price, 'single');
 }
 
@@ -2420,6 +2256,7 @@ async function submitCheckoutOrder(event) {
       items: appState.pendingOrder.items,
       delivery,
       couponCode: appState.pendingOrder.couponCode || appState.appliedCouponCode || '',
+      paymentMethod: 'saldo_virtual',
       purchaseOrigin: appState.pendingOrder.orderSource === 'single' ? 'producto_individual' : 'carrito_tienda'
     });
 
@@ -2434,6 +2271,10 @@ async function submitCheckoutOrder(event) {
     }
 
     const confirmedOrder = purchaseRes.order;
+    if (appState.currentUser && typeof purchaseRes.newBalance === 'number') {
+      appState.currentUser.balance = purchaseRes.newBalance;
+      saveCustomerSession(appState.currentUser);
+    }
     syncCurrentUserFromDB();
     updateAuthCircleState();
 
@@ -2610,7 +2451,7 @@ function bindEventListeners() {
         brandMatches.forEach(b => {
           html += `
             <div class="search-result-item" onclick="selectLiveSearchBrand('${escapeStoreHtml(b.id)}')">
-              <img src="${escapeStoreHtml(b.logo || 'imagenes/logo-bloom-hd.png')}" alt="${escapeStoreHtml(b.name)}">
+              <img src="${escapeStoreHtml(b.logo || 'imagenes/logo-bloom-beauty.png')}" alt="${escapeStoreHtml(b.name)}">
               <div class="search-result-meta">
                 <strong>${escapeStoreHtml(b.name)}</strong>
                 <small>${escapeStoreHtml(b.tagline || b.category || 'Ver línea completa')}</small>
@@ -2627,7 +2468,7 @@ function bindEventListeners() {
           const priceLabel = isLoggedIn ? formatCurrency(p.price) : '🔒 VIP';
           html += `
             <div class="search-result-item" onclick="selectLiveSearchProduct('${escapeStoreHtml(String(p.id))}')">
-              <img src="${escapeStoreHtml(p.image || 'imagenes/logo-bloom-hd.png')}" alt="${escapeStoreHtml(p.name)}">
+              <img src="${escapeStoreHtml(p.image || 'imagenes/logo-bloom-beauty.png')}" alt="${escapeStoreHtml(p.name)}">
               <div class="search-result-meta">
                 <strong>${escapeStoreHtml(p.name)}</strong>
                 <small>${escapeStoreHtml(p.brandName || 'Bloom Beauty')} • ${escapeStoreHtml(p.category || 'Cuidado')}</small>
@@ -2688,42 +2529,6 @@ function bindEventListeners() {
     });
   }
 
-  const catPills = document.querySelectorAll('.category-pill');
-  catPills.forEach(pill => {
-    pill.addEventListener('click', () => {
-      catPills.forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      appState.activeCategory = pill.getAttribute('data-cat') || 'Todos';
-      appState.page = 1;
-      renderProductsGrid();
-      sendPresencePing();
-    });
-  });
-
-  const filterBrandSelect = document.getElementById('filter-brand-select');
-  if (filterBrandSelect) {
-    filterBrandSelect.addEventListener('change', (e) => {
-      appState.catalogBrandFilter = e.target.value;
-      appState.page = 1;
-      renderProductsGrid();
-    });
-  }
-
-  const sortSelect = document.getElementById('sort-products-select');
-  if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      const val = e.target.value;
-      if (val === 'price-asc') {
-        appState.products.sort((a, b) => a.price - b.price);
-      } else if (val === 'price-desc') {
-        appState.products.sort((a, b) => b.price - a.price);
-      } else if (val === 'name-asc') {
-        appState.products.sort((a, b) => a.name.localeCompare(b.name));
-      }
-      renderProductsGrid();
-    });
-  }
-
   const contactForm = document.getElementById('contact-lead-form');
   if (contactForm) {
     contactForm.addEventListener('submit', (e) => {
@@ -2733,7 +2538,8 @@ function bindEventListeners() {
       const message = document.getElementById('lead-message').value.trim();
 
       const msg = `¡Hola *Bloom Beauty*! 🌸\n\nMi nombre es *${name}*.\n📱 Mi teléfono de contacto es: ${phone}\n\n💬 Mensaje: ${message}`;
-      const url = `https://wa.me/57${appState.storeInfo.phone || '3135143012'}?text=${encodeURIComponent(msg)}`;
+      const storeWppNum = formatStoreWhatsAppNumber(appState.storeInfo && appState.storeInfo.phone);
+      const url = `https://wa.me/${storeWppNum}?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
       contactForm.reset();
       showToast('📩 Abriendo WhatsApp para enviar tu mensaje...', 'success');
@@ -2768,46 +2574,6 @@ function bindEventListeners() {
 // ============================================================================
 // MOTOR DE CONVERSIÓN AVANZADO: MÁS VENDIDOS, COMPRA POR OBJETIVO & QUIZ CAPILAR
 // ============================================================================
-
-function renderBestsellers(tabFilter = 'top') {
-  const container = document.getElementById('bestsellers-grid');
-  if (!container) return;
-
-  const activeProducts = appState.products.filter(p => p.active !== false);
-  let selected = [];
-
-  if (tabFilter === 'shampoo') {
-    selected = activeProducts.filter(p => {
-      const text = (p.name + ' ' + (p.description || '')).toLowerCase();
-      return text.includes('shampoo') || text.includes('tónico') || text.includes('tonico') || text.includes('cebolla') || text.includes('biotina');
-    });
-  } else if (tabFilter === 'kits') {
-    selected = activeProducts.filter(p => {
-      const text = (p.name + ' ' + (p.category || '')).toLowerCase();
-      return text.includes('kit') || text.includes('dúo') || text.includes('duo') || text.includes('protocolo') || text.includes('combo');
-    });
-  } else if (tabFilter === 'tratamientos') {
-    selected = activeProducts.filter(p => {
-      const text = (p.name + ' ' + (p.description || '')).toLowerCase();
-      return text.includes('tratamiento') || text.includes('mascarilla') || text.includes('termoprotector') || text.includes('skala') || text.includes('repolariza') || text.includes('poción');
-    });
-  } else {
-    // Top 8 absolutos: priorizar productos con badge o de marcas diversas líderes
-    const withBadge = activeProducts.filter(p => p.badge);
-    selected = withBadge.length >= 8 ? withBadge : activeProducts;
-  }
-
-  container.innerHTML = '';
-  selected.slice(0, 8).forEach(product => {
-    container.appendChild(createProductCardElement(product));
-  });
-}
-
-function filterBestsellers(tabFilter, btnElem) {
-  document.querySelectorAll('.bestseller-tab').forEach(b => b.classList.remove('active'));
-  if (btnElem) btnElem.classList.add('active');
-  renderBestsellers(tabFilter);
-}
 
 function quickSearchTerm(term) {
   const searchInput = document.getElementById('global-search-input');
@@ -2918,124 +2684,6 @@ function filterBySmartGoal(goalKey) {
 // ============================================================================
 // TEST DE DIAGNÓSTICO CAPILAR & FACIAL INTERACTIVO (2 PASOS)
 // ============================================================================
-let currentQuizGoal = 'crecimiento';
-
-function selectQuizStep1(goal) {
-  currentQuizGoal = goal;
-  const step1 = document.getElementById('quiz-step-1');
-  const step2 = document.getElementById('quiz-step-2');
-  const step2Options = document.getElementById('quiz-step2-options');
-
-  if (!step1 || !step2 || !step2Options) return;
-
-  const subOptionsMap = {
-    crecimiento: [
-      { id: 'kit', icon: '🎁', title: 'Kit Completo Acelerador', desc: 'Shampoo + Tratamiento + Tónico para máxima velocidad' },
-      { id: 'shampoo', icon: '🧴', title: 'Shampoo o Tónico Individual', desc: 'Para fortalecer la raíz en cada lavada' },
-      { id: 'botanico', icon: '🌿', title: 'Terapia de Cebolla / Biotina', desc: 'Estimulación natural sin olor y brillo extremo' },
-      { id: 'todo', icon: '✨', title: 'Ver Los Mejores de Crecimiento', desc: 'Muéstrame los favoritos número #1 en ventas' }
-    ],
-    reparacion: [
-      { id: 'decolorado', icon: '🧪', title: 'Cabello Tinturado o Decolorado', desc: 'Rescate intensivo de hebras procesadas' },
-      { id: 'puntas', icon: '✂️', title: 'Puntas Abiertas y Resequedad', desc: 'Repolarización 360 y sellado de cutícula' },
-      { id: 'calor', icon: '🔥', title: 'Uso Frecuente de Plancha/Secador', desc: 'Termoprotección avanzada y proteína' },
-      { id: 'todo', icon: '💎', title: 'Protocolos Completos SOS', desc: 'Recuperación total desde la primera aplicación' }
-    ],
-    hidratacion: [
-      { id: 'rizos', icon: '🌀', title: 'Ondas y Rizos (Método Curly)', desc: 'Definición suave, cremas 1Kg y cero peso' },
-      { id: 'liso', icon: '✨', title: 'Cabello Liso con Frizz', desc: 'Efecto espejo, nutrición y control humedad' },
-      { id: 'mascarilla', icon: '🥥', title: 'Mascarillas & Mantecas Veganas', desc: 'Hidratación profunda de larga duración' },
-      { id: 'todo', icon: '👑', title: 'Ver Top Hidratación & Frizz', desc: 'Selección multimarca recomendada' }
-    ],
-    piel: [
-      { id: 'solar', icon: '☀️', title: 'Protección Solar & Antiedad', desc: 'Textura ligera sin grasa y control de brillo' },
-      { id: 'manchas', icon: '✨', title: 'Despigmentantes & Tónicos', desc: 'Unifica el tono de la piel y aporta luminosidad' },
-      { id: 'maquillaje', icon: '💄', title: 'Maquillaje Profesional & Glow', desc: 'Alta pigmentación, fijadores y acabado de lujo' },
-      { id: 'corporal', icon: '🌸', title: 'Cuidado Corporal & Fragancias', desc: 'Piel suave, luminosa y perfumada todo el día' }
-    ]
-  };
-
-  const options = subOptionsMap[goal] || subOptionsMap.crecimiento;
-  step2Options.innerHTML = options.map(opt => `
-    <button type="button" class="quiz-option-btn" onclick="selectQuizStep2('${opt.id}')">
-      <span class="quiz-opt-icon">${opt.icon}</span>
-      <strong>${opt.title}</strong>
-      <small>${opt.desc}</small>
-    </button>
-  `).join('');
-
-  step1.style.display = 'none';
-  step2.style.display = 'block';
-}
-
-function selectQuizStep2(subChoice) {
-  const step2 = document.getElementById('quiz-step-2');
-  const resultsView = document.getElementById('quiz-results-view');
-  const grid = document.getElementById('quiz-recommended-grid');
-  const headline = document.getElementById('quiz-result-headline');
-
-  if (!step2 || !resultsView || !grid) return;
-
-  const activeProducts = appState.products.filter(p => p.active !== false);
-  let matches = [];
-
-  if (currentQuizGoal === 'crecimiento') {
-    if (headline) headline.innerText = '🌱 Tu Rutina Ideal de Crecimiento & Anticaída';
-    matches = activeProducts.filter(p => {
-      const t = (p.name + ' ' + (p.description || '') + ' ' + (p.brandName || '')).toLowerCase();
-      if (subChoice === 'kit') return (t.includes('kit') || t.includes('dúo') || t.includes('protocolo')) && (t.includes('crecimiento') || t.includes('milagros') || t.includes('magic') || t.includes('anyeluz'));
-      if (subChoice === 'botanico') return t.includes('cebolla') || t.includes('anyeluz') || t.includes('biotina');
-      return t.includes('crecimiento') || t.includes('caída') || t.includes('caida') || t.includes('tónico') || t.includes('milagros') || t.includes('kaba');
-    });
-  } else if (currentQuizGoal === 'reparacion') {
-    if (headline) headline.innerText = '✨ Tu Tratamiento SOS de Repolarización & Rescate';
-    matches = activeProducts.filter(p => {
-      const t = (p.name + ' ' + (p.description || '') + ' ' + (p.brandName || '')).toLowerCase();
-      if (subChoice === 'calor') return t.includes('leche pal pelo') || t.includes('termoprotector') || t.includes('alisado');
-      return t.includes('repolariza') || t.includes('poción') || t.includes('posion') || t.includes('emergencia') || t.includes('repara') || t.includes('milagros');
-    });
-  } else if (currentQuizGoal === 'hidratacion') {
-    if (headline) headline.innerText = '🌀 Tu Selección para Control Frizz, Nutrición & Rizos';
-    matches = activeProducts.filter(p => {
-      const t = (p.name + ' ' + (p.description || '') + ' ' + (p.category || '')).toLowerCase();
-      if (subChoice === 'rizos') return t.includes('skala') || t.includes('etniker') || t.includes('rizos') || t.includes('cachos');
-      if (subChoice === 'liso') return t.includes('ritual') || t.includes('leche pal pelo') || t.includes('alisado') || t.includes('keratina');
-      return t.includes('skala') || t.includes('hidrat') || t.includes('mascarilla') || t.includes('etniker');
-    });
-  } else {
-    if (headline) headline.innerText = '🧖‍♀️ Tu Rutina de Cuidado Facial, Corporal & Maquillaje';
-    matches = activeProducts.filter(p => {
-      const t = (p.name + ' ' + (p.description || '') + ' ' + (p.category || '')).toLowerCase();
-      if (subChoice === 'maquillaje') return t.includes('engol') || t.includes('maquillaje');
-      if (subChoice === 'corporal') return t.includes('corporal') || t.includes('hada');
-      return t.includes('facial') || t.includes('solar') || t.includes('kaba') || t.includes('piel');
-    });
-  }
-
-  if (matches.length < 4) {
-    const extras = activeProducts.filter(p => !matches.includes(p));
-    matches = matches.concat(extras);
-  }
-
-  grid.innerHTML = '';
-  matches.slice(0, 4).forEach(prod => {
-    grid.appendChild(createProductCardElement(prod));
-  });
-
-  step2.style.display = 'none';
-  resultsView.style.display = 'block';
-  showToast('✨ ¡Hemos encontrado los 4 productos ideales para ti!', 'success');
-}
-
-function resetQuiz() {
-  const step1 = document.getElementById('quiz-step-1');
-  const step2 = document.getElementById('quiz-step-2');
-  const resultsView = document.getElementById('quiz-results-view');
-  if (step1) step1.style.display = 'block';
-  if (step2) step2.style.display = 'none';
-  if (resultsView) resultsView.style.display = 'none';
-}
-
 function dismissLiveSalesPopup() {
   const popup = document.getElementById('live-sales-popup');
   if (popup) {
@@ -3056,60 +2704,6 @@ if (document.readyState === 'loading') {
 // ============================================================================
 // VINCULACIÓN DINÁMICA DE RESEÑAS CON BLOOMDB & FORMULARIO DIRECTO
 // ============================================================================
-function selectInlineRating(stars) {
-  const input = document.getElementById('inline-selected-rating');
-  const badge = document.getElementById('inline-star-feedback');
-  if (input) input.value = stars;
-
-  const starElements = document.querySelectorAll('#inline-star-row .interactive-star');
-  starElements.forEach((s, idx) => {
-    if (idx < stars) {
-      s.classList.add('active');
-    } else {
-      s.classList.remove('active');
-    }
-  });
-
-  const texts = {
-    1: '1.0 / 5.0 (Malo)',
-    2: '2.0 / 5.0 (Regular)',
-    3: '3.0 / 5.0 (Bueno)',
-    4: '4.0 / 5.0 (Muy Bueno)',
-    5: '5.0 / 5.0 (¡Excelente!)'
-  };
-  if (badge) badge.innerText = texts[stars] || `${stars}.0 / 5.0`;
-}
-
-function submitInlineReview(e) {
-  e.preventDefault();
-  const author = (document.getElementById('inline-review-name').value || '').trim();
-  const city = (document.getElementById('inline-review-city').value || '').trim();
-  const productOrSubject = (document.getElementById('inline-review-product').value || '').trim() || 'Experiencia General';
-  const comment = (document.getElementById('inline-review-comment').value || '').trim();
-  const rating = Number(document.getElementById('inline-selected-rating').value) || 5;
-
-  if (!author || !city || !comment) {
-    showToast('Por favor completa todos los campos requeridos', 'error');
-    return;
-  }
-
-  if (typeof BloomDB !== 'undefined') {
-    BloomDB.addReview({
-      author: author,
-      city: city,
-      productOrSubject: productOrSubject,
-      comment: comment,
-      rating: rating,
-      verified: true
-    });
-  }
-
-  document.getElementById('inline-review-form').reset();
-  selectInlineRating(5);
-  renderReviewsDynamic();
-  showToast('🎉 ¡Gracias por tu calificación! Tu opinión se ha publicado y guardado en el sistema.', 'success');
-}
-
 function ensureInitialReviewsSeed() {
   if (typeof BloomDB === 'undefined') return;
   try {
@@ -3156,8 +2750,8 @@ function renderReviewsDynamic() {
 
   // Auto-completar datos si el usuario tiene sesión iniciada
   if (appState.currentUser) {
-    const nameInput = document.getElementById('inline-review-name');
-    const cityInput = document.getElementById('inline-review-city');
+    const nameInput = document.getElementById('review-author-input');
+    const cityInput = document.getElementById('review-city-input');
     if (nameInput && !nameInput.value) nameInput.value = appState.currentUser.username || appState.currentUser.name || '';
     if (cityInput && !cityInput.value) cityInput.value = appState.currentUser.city || '';
   }
@@ -3361,30 +2955,6 @@ function getSavedEntryPermissions() {
   };
 }
 
-function matchDepartmentOption(regionName) {
-  if (!regionName) return '';
-  const select = document.getElementById('entry-department-input');
-  if (!select) return regionName;
-  const clean = String(regionName)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
-  for (const opt of Array.from(select.options)) {
-    if (!opt.value) continue;
-    const optClean = opt.value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-    if (clean.includes(optClean) || optClean.includes(clean)) {
-      return opt.value;
-    }
-  }
-  if (clean.includes('bogota') || clean.includes('distrito')) return 'Bogotá D.C.';
-  return 'Otro / Nacional';
-}
-
-
 function saveEntryPermissions(perms) {
   try {
     localStorage.setItem(ENTRY_PERMISSIONS_KEY, JSON.stringify(perms));
@@ -3396,213 +2966,18 @@ function saveEntryPermissions(perms) {
 
 function initEntryPermissionsFlow() {
   document.body.classList.remove('entry-gate-locked');
-
-  // Ocultar cualquier modal de selección de ubicación y permisos de entrada
-  const entryModal = document.getElementById('entry-permissions-modal');
-  if (entryModal) {
-    entryModal.style.display = 'none';
-    entryModal.remove();
+  const saved = localStorage.getItem(ENTRY_PERMISSIONS_KEY);
+  if (!saved) {
+    saveEntryPermissions({
+      completed: true,
+      city: 'Colombia',
+      department: 'Nacional',
+      lat: null,
+      lon: null,
+      locationGranted: true,
+      notificationsGranted: false
+    });
   }
-
-  // Establecer permisos completados por defecto sin pedirle nada al usuario
-  saveEntryPermissions({
-    completed: true,
-    city: 'Colombia',
-    department: 'Nacional',
-    lat: null,
-    lon: null,
-    locationGranted: true,
-    notificationsGranted: false
-  });
-}
-
-
-async function requestBrowserLocationStep() {
-  const btn = document.getElementById('btn-detect-gps-location');
-  const statusEl = document.getElementById('entry-gps-status-msg');
-  const deptSelect = document.getElementById('entry-department-input');
-  const cityInput = document.getElementById('entry-city-input');
-
-  const showStatus = (txt, isOk = true) => {
-    if (!statusEl) return;
-    statusEl.style.display = 'block';
-    statusEl.className = `entry-gps-status-msg ${isOk ? 'status-ok' : 'status-info'}`;
-    statusEl.innerText = txt;
-  };
-
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳ Solicitando permiso de ubicación...</span>';
-  }
-
-  const restoreBtn = (label) => {
-    if (!btn) return;
-    btn.disabled = false;
-    btn.innerHTML = `<span>${label}</span>`;
-  };
-
-  const applyDetectedGeo = (cityVal, regionVal, latVal = null, lonVal = null, viaGps = true) => {
-    const matchedDept = matchDepartmentOption(regionVal);
-    if (deptSelect && matchedDept) deptSelect.value = matchedDept;
-    if (cityInput && cityVal) cityInput.value = cityVal;
-    pendingEntryLocation.city = cityVal || (cityInput ? cityInput.value : '');
-    pendingEntryLocation.department = matchedDept || regionVal || '';
-    pendingEntryLocation.lat = latVal;
-    pendingEntryLocation.lon = lonVal;
-    pendingEntryLocation.locationGranted = Boolean(viaGps);
-    showStatus(`✓ Ubicación detectada: ${cityVal || 'Tu zona'}${matchedDept ? ', ' + matchedDept : ''}. Confirma abajo para continuar.`, true);
-    restoreBtn('✓ Ubicación detectada correctamente');
-  };
-
-  const fallbackIpDetection = async () => {
-    try {
-      const resp = await fetch('https://ipapi.co/json/');
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data && (data.city || data.region)) {
-          applyDetectedGeo(data.city || '', data.region || '', data.latitude || null, data.longitude || null, false);
-          return true;
-        }
-      }
-    } catch (e) {}
-    return false;
-  };
-
-  if (!navigator.geolocation) {
-    const okIp = await fallbackIpDetection();
-    if (!okIp) {
-      showStatus('Selecciona tu Departamento y escribe tu Ciudad abajo para continuar.', false);
-      restoreBtn('🧭 Seleccionar ubicación manualmente');
-    }
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const { latitude, longitude } = pos.coords;
-      pendingEntryLocation.lat = latitude;
-      pendingEntryLocation.lon = longitude;
-      pendingEntryLocation.locationGranted = true;
-
-      try {
-        const revResp = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=es`);
-        if (revResp.ok) {
-          const rev = await revResp.json();
-          const detectedCity = rev.city || rev.locality || '';
-          const detectedDept = rev.principalSubdivision || '';
-          applyDetectedGeo(detectedCity, detectedDept, latitude, longitude, true);
-          return;
-        }
-      } catch (e) {}
-
-      const okIp = await fallbackIpDetection();
-      if (!okIp) {
-        showStatus('✓ Permiso concedido. Confirma tu Ciudad y Departamento para continuar.', true);
-        restoreBtn('✓ Permiso de ubicación activo');
-      }
-    },
-    async () => {
-      const okIp = await fallbackIpDetection();
-      if (!okIp) {
-        showStatus('Indícanos tu Departamento y Ciudad abajo para brindarte cobertura exacta.', false);
-        restoreBtn('🧭 Reintentar permiso de ubicación');
-      }
-    },
-    { enableHighAccuracy: false, timeout: 7000, maximumAge: 60000 }
-  );
-}
-
-function completeEntryStep1Location() {
-  const deptSelect = document.getElementById('entry-department-input');
-  const cityInput = document.getElementById('entry-city-input');
-  const department = (deptSelect ? deptSelect.value : '').trim();
-  const city = (cityInput ? cityInput.value : '').trim();
-
-  if (!department || !city) {
-    showToast('Por favor indícanos tu Ciudad y Departamento para continuar al Paso 2.', 'error');
-    if (!department && deptSelect) deptSelect.focus();
-    else if (!city && cityInput) cityInput.focus();
-    return;
-  }
-
-  pendingEntryLocation.city = city;
-  pendingEntryLocation.department = department;
-
-  // Pasar inmediatamente al Paso 2 (Notificaciones)
-  const step1 = document.getElementById('entry-step-1-location');
-  const step2 = document.getElementById('entry-step-2-notifications');
-  const dot1 = document.getElementById('entry-step-dot-1');
-  const dot2 = document.getElementById('entry-step-dot-2');
-
-  if (step1) step1.style.display = 'none';
-  if (step2) step2.style.display = 'block';
-  if (dot1) {
-    dot1.classList.remove('active');
-    dot1.classList.add('done');
-  }
-  if (dot2) dot2.classList.add('active');
-
-  if (typeof BloomTracker !== 'undefined' && typeof BloomTracker.logAction === 'function') {
-    BloomTracker.logAction('Permiso Paso 1 (Ubicación)', `Confirmó ubicación: ${city}, ${department}`);
-  }
-}
-
-async function completeEntryStep2Notifications(wantsNotifications = true) {
-  let granted = false;
-
-  if (wantsNotifications) {
-    if (typeof Notification !== 'undefined' && typeof Notification.requestPermission === 'function') {
-      try {
-        const perm = await Notification.requestPermission();
-        granted = (perm === 'granted' || perm === 'default');
-        if (perm === 'denied') {
-          // Aún mantenemos alertas personalizadas dentro de la tienda si el usuario aceptó en nuestro flujo
-          granted = true;
-        }
-      } catch (e) {
-        granted = true;
-      }
-    } else {
-      granted = true;
-    }
-  }
-
-  const finalPerms = {
-    completed: true,
-    city: pendingEntryLocation.city || 'Colombia',
-    department: pendingEntryLocation.department || 'Nacional',
-    lat: pendingEntryLocation.lat,
-    lon: pendingEntryLocation.lon,
-    locationGranted: Boolean(pendingEntryLocation.locationGranted || pendingEntryLocation.city),
-    notificationsGranted: Boolean(wantsNotifications && granted),
-    completedAt: new Date().toISOString()
-  };
-
-  try {
-    localStorage.setItem(ENTRY_PERMISSIONS_KEY, JSON.stringify(finalPerms));
-  } catch (e) {}
-
-  // Pre-rellenar ciudad y departamento en registro
-  const regCity = document.getElementById('reg-city');
-  const regDept = document.getElementById('reg-department');
-  if (regCity && !regCity.value) regCity.value = finalPerms.city;
-  if (regDept && !regDept.value) regDept.value = finalPerms.department;
-
-  const modal = document.getElementById('entry-permissions-modal');
-  if (modal) modal.style.display = 'none';
-  document.body.classList.remove('entry-gate-locked');
-
-  if (typeof BloomTracker !== 'undefined' && typeof BloomTracker.updatePermissions === 'function') {
-    BloomTracker.updatePermissions(Object.assign({}, finalPerms, {
-      triggerWelcomeAlert: finalPerms.notificationsGranted
-    }));
-    BloomTracker.logAction(
-      'Permiso Paso 2 (Notificaciones)',
-      finalPerms.notificationsGranted ? 'Activó alertas personalizadas' : 'Continuó sin alertas automáticas'
-    );
-  }
-
-  showToast(`✨ ¡Bienvenida desde ${finalPerms.city}! Explora nuestro catálogo oficial.`, 'success');
 }
 
 function initPersonalizedAlertsListener() {
@@ -4142,8 +3517,6 @@ function handleCustomerLogout() {
 }
 
 // Control de recarga de "Tu Saldo"
-let currentActiveRecharge = null;
-let currentReceiptBase64 = '';
 
 function toggleRechargeDrawer(forceOpen = null, suggestedAmount = 50000) {
   const box = document.getElementById('auth-recharge-form-box');
@@ -4153,190 +3526,11 @@ function toggleRechargeDrawer(forceOpen = null, suggestedAmount = 50000) {
   box.style.display = nextOpen ? 'block' : 'none';
 
   if (nextOpen) {
-    cancelCurrentRechargeFlow();
     const input = document.getElementById('recharge-amount-input');
     if (input) {
       input.value = String(Math.max(10000, Math.round(Number(suggestedAmount) || 50000)));
       input.focus();
     }
-  }
-}
-
-function cancelCurrentRechargeFlow() {
-  currentActiveRecharge = null;
-  currentReceiptBase64 = '';
-  const s1 = document.getElementById('recharge-step-1');
-  const s2 = document.getElementById('recharge-step-2');
-  if (s1) s1.style.display = 'block';
-  if (s2) s2.style.display = 'none';
-  const fileInput = document.getElementById('recharge-file-input');
-  if (fileInput) fileInput.value = '';
-  const prevBox = document.getElementById('recharge-file-preview-box');
-  if (prevBox) prevBox.style.display = 'none';
-}
-
-// Definiciones auxiliares seguras para recargas
-function formatCOP(num) {
-  return typeof formatCurrency === 'function' ? formatCurrency(num) : ('$' + Math.round(Number(num) || 0).toLocaleString('es-CO') + ' COP');
-}
-function renderAuthUserPanel() {
-  if (typeof renderAuthLoggedProfile === 'function') renderAuthLoggedProfile();
-}
-
-async function handleStartRecharge(e) {
-  if (e && typeof e.preventDefault === 'function') e.preventDefault();
-  syncCurrentUserFromDB();
-  if (!appState.currentUser) {
-    showToast('Debes iniciar sesión para recargar Tu Saldo', 'error');
-    return;
-  }
-
-  const rawAmount = Number(document.getElementById('recharge-amount-input').value) || 0;
-  const amount = Math.round(rawAmount);
-  if (amount < 10000) {
-    showToast('El monto mínimo es de $10.000 COP', 'error');
-    return;
-  }
-
-  const btn = document.getElementById('btn-create-recharge-req');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳ Creando solicitud en la nube...</span>';
-  }
-
-  let rechargeData = null;
-  const payload = {
-    customerId: appState.currentUser.id,
-    customerName: appState.currentUser.username || appState.currentUser.name || 'Cliente',
-    customerPhone: appState.currentUser.phone || '',
-    customerEmail: appState.currentUser.email || '',
-    amount: amount
-  };
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch('https://bloom-backend-v6.onrender.com/api/v6/recharges/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-
-    if (res.ok) {
-      const data = await res.json();
-      rechargeData = data.recharge;
-    }
-  } catch (netErr) {
-    console.warn('Backend cloud ping timeout/failed, continuing with local fallback:', netErr);
-  }
-
-  // Fallback local si la nube tardó o falló
-  if (!rechargeData) {
-    if (typeof BloomDB !== 'undefined' && typeof BloomDB.addRechargeRequest === 'function') {
-      rechargeData = BloomDB.addRechargeRequest(payload);
-    }
-  }
-
-  currentActiveRecharge = rechargeData || { id: 'REC-' + Date.now().toString().slice(-6), amount: amount };
-
-  // Mostrar Paso 2
-  const s1 = document.getElementById('recharge-step-1');
-  const s2 = document.getElementById('recharge-step-2');
-  if (s1) s1.style.display = 'none';
-  if (s2) s2.style.display = 'block';
-
-  const viewId = document.getElementById('view-recharge-id');
-  if (viewId) viewId.innerText = currentActiveRecharge.id;
-  const viewAmt = document.getElementById('view-recharge-amount');
-  if (viewAmt) viewAmt.innerText = formatCOP(amount);
-  showToast('¡Solicitud creada! Realiza la transferencia y sube tu comprobante abajo.', 'info');
-
-  if (btn) {
-    btn.disabled = false;
-    btn.innerHTML = '<span>⚡ Crear Solicitud & Ver Cuentas de Pago</span>';
-  }
-}
-
-function handleReceiptFileSelected(e) {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-
-  if (!file.type.startsWith('image/')) {
-    showToast('Por favor selecciona un archivo de imagen (PNG, JPG, JPEG).', 'error');
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    currentReceiptBase64 = evt.target.result;
-    const prevBox = document.getElementById('recharge-file-preview-box');
-    const prevImg = document.getElementById('recharge-file-preview-img');
-    if (prevBox && prevImg) {
-      prevImg.src = currentReceiptBase64;
-      prevBox.style.display = 'block';
-    }
-  };
-  reader.readAsDataURL(file);
-}
-
-async function handleUploadReceiptAndConfirm() {
-  if (!currentActiveRecharge) {
-    showToast('No hay una solicitud de recarga activa.', 'error');
-    return;
-  }
-
-  if (!currentReceiptBase64) {
-    showToast('Por favor adjunta la foto del comprobante de pago.', 'error');
-    return;
-  }
-
-  const refText = (document.getElementById('recharge-ref-text-input')?.value || '').trim();
-  const btn = document.getElementById('btn-submit-receipt');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳ Enviando comprobante a la nube...</span>';
-  }
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
-    const res = await fetch('https://bloom-backend-v6.onrender.com/api/v6/recharges/receipt', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rechargeId: currentActiveRecharge.id,
-        receiptUrl: currentReceiptBase64,
-        reference: refText
-      }),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-  } catch (err) {
-    console.warn('Error uploading receipt to cloud, continuing with local sync:', err);
-  }
-
-  // Guardar comprobante localmente en BloomDB
-  try {
-    if (typeof BloomDB !== 'undefined') {
-      const data = BloomDB.getData();
-      const rec = (data.rechargeRequests || []).find(r => r.id === currentActiveRecharge.id);
-      if (rec) {
-        rec.receiptUrl = currentReceiptBase64;
-        rec.reference = refText || rec.reference;
-        BloomDB.saveData(data);
-      }
-    }
-  } catch(e) {}
-
-  showToast('¡Comprobante recibido con éxito! En minutos el administrador lo verificará y acreditará tu saldo.', 'success');
-  toggleRechargeDrawer(false);
-  if (typeof renderAuthLoggedProfile === 'function') renderAuthLoggedProfile();
-
-  if (btn) {
-    btn.disabled = false;
-    btn.innerHTML = '<span>✅ ¡Ya Pagué! Enviar Comprobante</span>';
   }
 }
 
@@ -4384,6 +3578,37 @@ function submitCustomerRechargeRequest(e) {
     });
   }
 
+  // Notificar y respaldar simultáneamente en el backend Cloud (Render + Supabase)
+  try {
+    const cloudPayload = {
+      customerId: appState.currentUser.id,
+      customerName: appState.currentUser.username || appState.currentUser.name || 'Cliente',
+      customerPhone: appState.currentUser.phone || '',
+      customerEmail: appState.currentUser.email || '',
+      amount: amount,
+      paymentMethod: paymentMethod,
+      reference: paymentRef,
+      userNote: userNote
+    };
+    const cCtrl = new AbortController();
+    const cTimer = setTimeout(() => cCtrl.abort(), 45000);
+    const cloudEndpoint = (typeof BloomDB !== 'undefined' && BloomDB.getCloudConfig)
+      ? BloomDB.getCloudConfig().endpointUrl
+      : 'https://bloom-backend-v6.onrender.com';
+    fetch(`${cloudEndpoint}/api/v6/recharges/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cloudPayload),
+      signal: cCtrl.signal
+    }).then(r => r.json()).then(data => {
+      clearTimeout(cTimer);
+      console.log('🌸 [BloomCloud] Solicitud de recarga acreditada en la nube:', data);
+    }).catch(err => {
+      clearTimeout(cTimer);
+      console.warn('🌸 [BloomCloud] Respaldo local activo para la recarga:', err.message);
+    });
+  } catch (cloudErr) {}
+
   const storePhoneFormatted = formatStoreWhatsAppNumber(appState.storeInfo && appState.storeInfo.phone);
   let msg = `💎 *SOLICITUD DE RECARGA EN TU SALDO — BLOOM BEAUTY* 💎\n`;
   if (createdReq && createdReq.id) {
@@ -4411,107 +3636,4 @@ function submitCustomerRechargeRequest(e) {
   renderAuthLoggedProfile();
   showAuthInlineAlert(`✓ Solicitud por ${formatCurrency(amount)} registrada. Apenas se verifique tu comprobante, Tu Saldo se actualizará aquí automáticamente.`, 'success');
   showToast(`📲 ¡Solicitud de recarga por ${formatCurrency(amount)} enviada!`, 'success');
-}
-
-
-
-
-
-
-// ============================================================================
-// LÓGICA DE PROMOCIONES, OFERTAS FLASH 24H Y RULETA VIP INTERACTIVA
-// ============================================================================
-
-let currentWonCoupon = '';
-
-function startFlashCountdown() {
-  function updateTimer() {
-    const now = new Date();
-    const midnight = new Date();
-    midnight.setHours(23, 59, 59, 999);
-    const diff = Math.max(0, midnight - now);
-
-    const h = String(Math.floor((diff / (1000 * 60 * 60)) % 24)).padStart(2, '0');
-    const m = String(Math.floor((diff / (1000 * 60)) % 60)).padStart(2, '0');
-    const s = String(Math.floor((diff / 1000) % 60)).padStart(2, '0');
-
-    const elH = document.getElementById('flash-hours');
-    const elM = document.getElementById('flash-minutes');
-    const elS = document.getElementById('flash-seconds');
-    if (elH) elH.innerText = h;
-    if (elM) elM.innerText = m;
-    if (elS) elS.innerText = s;
-  }
-  updateTimer();
-  setInterval(updateTimer, 1000);
-}
-
-function openPromoWheelModal() {
-  const modal = document.getElementById('promo-wheel-modal');
-  if (modal) modal.style.display = 'flex';
-}
-
-function closePromoWheelModal() {
-  const modal = document.getElementById('promo-wheel-modal');
-  if (modal) modal.style.display = 'none';
-}
-
-let isSpinning = false;
-function spinLuckyWheel() {
-  if (isSpinning) return;
-  const wheel = document.getElementById('lucky-wheel-canvas');
-  const btn = document.getElementById('btn-spin-now');
-  if (!wheel || !btn) return;
-
-  isSpinning = true;
-  btn.disabled = true;
-  btn.innerText = 'GIRANDO...';
-
-  // Premios posibles
-  const prizes = [
-    { label: '15% de Descuento Especial', code: 'RULETA15', type: 'discount' },
-    { label: '10% de Descuento Exclusivo', code: 'VIP10', type: 'discount' },
-    { label: 'Envío Gratis Nacional', code: 'ENVIOGRATIS', type: 'shipping' },
-    { label: '$15.000 en Tu Saldo Virtual', code: 'BONO15K', type: 'balance' }
-  ];
-
-  const picked = prizes[Math.floor(Math.random() * prizes.length)];
-  currentWonCoupon = picked.code;
-
-  // Animación de rotación (5 a 8 vueltas completas)
-  const randomDeg = 1800 + Math.floor(Math.random() * 360);
-  wheel.style.transform = `rotate(${randomDeg}deg)`;
-
-  setTimeout(() => {
-    isSpinning = false;
-    btn.style.display = 'none';
-
-    const resBox = document.getElementById('wheel-win-result-box');
-    const title = document.getElementById('wheel-win-title');
-    const desc = document.getElementById('wheel-win-desc');
-    const codePill = document.getElementById('wheel-coupon-code');
-
-    if (resBox && title && desc && codePill) {
-      title.innerText = '🎉 ¡GANASTE ' + picked.label.toUpperCase() + '!';
-      desc.innerText = 'Tu código promocional está listo para aplicarse a tu carrito de compras:';
-      codePill.innerText = picked.code;
-      resBox.style.display = 'block';
-    }
-  }, 4200);
-}
-
-function applyWonPromoCoupon() {
-  if (currentWonCoupon) {
-    appState.appliedCouponCode = currentWonCoupon;
-    showToast('✨ Cupón ' + currentWonCoupon + ' aplicado a tu carrito!', 'success');
-    closePromoWheelModal();
-    toggleCartDrawer(true);
-  }
-}
-
-// Iniciar contador cuando el DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startFlashCountdown);
-} else {
-  startFlashCountdown();
 }

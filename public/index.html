@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bloom Beauty | Estetica y cosmetica a tu alcanze</title>
+  <title>Bloom Beauty | Estética y Cosmética a tu Alcance</title>
   <link rel="icon" type="image/jpeg" href="imagenes/logo-bloom-beauty.jpg">
   
   <!-- Google Fonts: Cormorant Garamond (Alta Costura Editorial) & Outfit / Montserrat (Conversión Moderna) -->
@@ -43,7 +43,7 @@
         </div>
         <div class="brand-text">
           <h1 id="header-brand-name">Bloom Beauty</h1>
-          <span id="header-brand-tagline">Cosmetica &amp; Cuidado capilar </span>
+          <span id="header-brand-tagline">Cosmética &amp; Cuidado capilar</span>
         </div>
       </a>
 
@@ -96,6 +96,7 @@
           <span class="auth-circle-avatar" id="auth-circle-avatar"><i class="fas fa-user" aria-hidden="true"></i></span>
         </button>
       </div>
+    </div>
   </header>
 
 
@@ -111,7 +112,7 @@
         </div>
         <div class="mobile-drawer-brand-text">
           <strong id="mobile-drawer-brand-name">Bloom Beauty</strong>
-          <span id="mobile-drawer-brand-tagline">Cosmetica &amp; Cuidado capilar</span>
+          <span id="mobile-drawer-brand-tagline">Cosmética &amp; Cuidado capilar</span>
         </div>
       </a>
       <button type="button" class="btn-close-mobile-drawer" onclick="toggleMobileMenu(false)" aria-label="Cerrar menú">
@@ -181,28 +182,6 @@
   </aside>
 
   <!-- HERO SECTION DE ALTO IMPACTO & NEUROVENTAS -->
-  
-  <!-- BANNER DINÁMICO DE OFERTAS FLASH 24H -->
-  <section id="flash-sale-live-bar" class="flash-sale-live-bar">
-    <div class="container flash-sale-flex">
-      <div class="flash-sale-title">
-        <span class="flash-icon">⚡</span>
-        <strong>OFERTAS FLASH DEL DÍA</strong>
-        <span class="flash-badge">Hasta 25% OFF</span>
-      </div>
-      <div class="flash-timer-box">
-        <span class="timer-label">Termina en:</span>
-        <div class="timer-countdown" id="flash-countdown-timer">
-          <span class="timer-num" id="flash-hours">05</span>h :
-          <span class="timer-num" id="flash-minutes">42</span>m :
-          <span class="timer-num" id="flash-seconds">18</span>s
-        </div>
-      </div>
-      <button type="button" class="btn-spin-wheel-trigger" onclick="openPromoWheelModal()">
-        🎡 Girar Ruleta de Premios VIP
-      </button>
-    </div>
-  </section>
 
   <section class="hero-section">
     <div class="container hero-grid">
@@ -892,7 +871,359 @@
   <!-- BANNER DE ALERTAS PERSONALIZADAS BASADAS EN NAVEGACIÓN -->
   <div id="personalized-alert-container" class="personalized-alert-container"></div>
 
-    <!-- SCRIPTS ESENCIALES BLOOM BEAUTY V6 (CARGA INSTANTÁNEA) -->
+
+  <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+  <div id="toast-stack" class="toast-stack"></div>
+
+  <!-- BARRA FLOTANTE DOCK DE NAVEGACIÓN INFERIOR (LIQUID GLASS DOCK DE ALTA GAMA) -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navegación Móvil Rápida">
+    <div class="glass-dock-shimmer" aria-hidden="true"></div>
+    <a href="#" class="mobile-nav-item active" onclick="activateMobileNav(this); window.scrollTo({top:0, behavior:'smooth'});">
+      <span class="mobile-nav-icon-wrap">
+        <span class="mobile-nav-icon">🏠</span>
+      </span>
+      <span class="mobile-nav-label">Inicio</span>
+    </a>
+    <a href="#brand-catalog-viewport" class="mobile-nav-item" onclick="activateMobileNav(this); navigateToProducts(event);">
+      <span class="mobile-nav-icon-wrap">
+        <span class="mobile-nav-icon">🛍️</span>
+      </span>
+      <span class="mobile-nav-label">Productos</span>
+    </a>
+    <a href="#main-brands-section" class="mobile-nav-item" onclick="activateMobileNav(this); navigateToBrands(event);">
+      <span class="mobile-nav-icon-wrap">
+        <span class="mobile-nav-icon">🏷️</span>
+      </span>
+      <span class="mobile-nav-label">Marcas</span>
+    </a>
+    <a href="#about-section" class="mobile-nav-item" onclick="activateMobileNav(this);">
+      <span class="mobile-nav-icon-wrap">
+        <span class="mobile-nav-icon">✨</span>
+      </span>
+      <span class="mobile-nav-label">Nosotros</span>
+    </a>
+    <button type="button" class="mobile-nav-item" onclick="activateMobileNav(this); openAuthModal();" aria-label="Mi cuenta">
+      <span class="mobile-nav-icon-wrap">
+        <span class="mobile-nav-icon">👤</span>
+      </span>
+      <span class="mobile-nav-label">Cuenta</span>
+    </button>
+  </nav>
+
+  <!-- MODAL: DEJAR RESEÑA Y ESTRELLAS CLIENTE -->
+  <div id="store-review-modal" class="modal-overlay-bg">
+    <div class="modal-card-box store-review-card">
+      <div class="modal-top-bar">
+        <div>
+          <h3 style="display: flex; align-items: center; gap: 8px; font-family: var(--font-serif); color: #FDE68A;">
+            <span>⭐</span> Calificar Bloom Beauty & Compartir Experiencia
+          </h3>
+          <p style="font-size: 0.84rem; color: #D6CFC7; margin-top: 3px;">
+            Tu opinión ayuda a miles de mujeres a elegir su rutina de belleza ideal
+          </p>
+        </div>
+        <button class="btn-close-modal-box" onclick="closeModal('store-review-modal')">✕</button>
+      </div>
+
+      <form id="store-review-user-form" onsubmit="submitStoreReviewFromModal(event)" class="store-user-review-form">
+        <div class="rating-stars-picker-wrap">
+          <label>¿Cuántas estrellas le das a tu experiencia?</label>
+          <div class="star-rating-selector" id="star-rating-selector">
+            <span class="star-pick active" data-rating="1" onclick="setPickerRating(1)">★</span>
+            <span class="star-pick active" data-rating="2" onclick="setPickerRating(2)">★</span>
+            <span class="star-pick active" data-rating="3" onclick="setPickerRating(3)">★</span>
+            <span class="star-pick active" data-rating="4" onclick="setPickerRating(4)">★</span>
+            <span class="star-pick active" data-rating="5" onclick="setPickerRating(5)">★</span>
+          </div>
+          <span id="star-rating-text-feedback" class="rating-feedback-label">5.0 de 5 estrellas (¡Excelente!)</span>
+          <input type="hidden" id="user-selected-rating" value="5">
+        </div>
+
+        <div class="review-form-fields-grid">
+          <div class="checkout-field">
+            <label for="review-author-input">Tu Nombre y Apellido *</label>
+            <input type="text" id="review-author-input" required placeholder="Tu nombre completo">
+          </div>
+
+          <div class="checkout-field">
+            <label for="review-city-input">Ciudad y Departamento *</label>
+            <input type="text" id="review-city-input" required placeholder="Ej: Cali, Valle">
+          </div>
+
+          <div class="checkout-field checkout-field-full">
+            <label for="review-product-input">¿Qué producto compraste o sobre cuál opinas? (Opcional)</label>
+            <input type="text" id="review-product-input" placeholder="Ej: Shampoo Milagros, Kit Anyeluz, Skala...">
+          </div>
+
+          <div class="checkout-field checkout-field-full">
+            <label for="review-comment-input">Tu Reseña / Opinión Sincera *</label>
+            <textarea id="review-comment-input" rows="3" required placeholder="Cuéntanos cómo te pareció el envío, la atención por WhatsApp y los resultados del producto en tu cabello o piel..."></textarea>
+          </div>
+        </div>
+
+        <div class="checkout-actions">
+          <button type="button" class="btn-cancel-checkout" onclick="closeModal('store-review-modal')">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-confirm-checkout-wpp">
+            <span>✨ Publicar mi Reseña Ahora</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL DE AUTENTICACIÓN / MI CUENTA (DESPLEGADO EN EL CENTRO DE LA PANTALLA) -->
+  <div id="auth-customer-modal" class="modal-overlay-bg auth-floating-overlay" onclick="handleAuthOverlayClick(event)">
+    <div class="auth-modal-card-box" id="auth-modal-card-box">
+      <!-- BARRA SUPERIOR CON CONTROLES (MINIMIZAR Y CERRAR) -->
+      <div class="auth-modal-topbar">
+        <div class="auth-modal-topbar-title">
+          <span>🌸</span>
+          <strong id="auth-topbar-title-text">Mi Cuenta VIP Bloom</strong>
+        </div>
+        <div class="auth-window-controls">
+          <button type="button" class="btn-window-action btn-minimize" onclick="toggleAuthMinimize()" title="Minimizar o restaurar ventana">
+            <span id="auth-minimize-icon">🗕</span>
+          </button>
+          <button type="button" class="btn-window-action btn-close" onclick="closeAuthModal()" title="Cerrar ventana">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- CUERPO DE LA VENTANA (SE MINIMIZA A VOLUNTAD) -->
+      <div class="auth-modal-body-content" id="auth-modal-body-content">
+        <!-- BANNER INTERNO DE MENSAJES / VALIDACIÓN -->
+        <div id="auth-inline-alert" class="auth-inline-alert" style="display: none;"></div>
+
+        <!-- PESTAÑAS: INICIAR SESIÓN / REGISTRARSE (CUANDO NO HAY SESIÓN) -->
+        <div id="auth-anonymous-view">
+          <div class="auth-tabs-header">
+            <button type="button" class="auth-tab-btn active" id="tab-btn-login" onclick="switchAuthTab('login')">
+              🔑 Iniciar Sesión
+            </button>
+            <button type="button" class="auth-tab-btn" id="tab-btn-register" onclick="switchAuthTab('register')">
+              ✨ Registrarse
+            </button>
+          </div>
+
+          <!-- FORMULARIO 1: INICIAR SESIÓN -->
+          <form id="customer-login-form" onsubmit="handleCustomerLogin(event)" class="auth-tab-content active" novalidate>
+            <div class="auth-form-intro">
+              <h3>¡Bienvenida de vuelta! ✨</h3>
+              <p>Inicia sesión con tu correo o teléfono para ver precios exclusivos, consultar <strong>Tu Saldo</strong> y comprar.</p>
+            </div>
+
+            <div class="checkout-field">
+              <label for="login-email">Correo Electrónico o Teléfono / WhatsApp *</label>
+              <input type="text" id="login-email" placeholder="tu-correo@gmail.com o 3101234567" autocomplete="username">
+            </div>
+
+            <div class="checkout-field">
+              <label for="login-password">Contraseña *</label>
+              <div class="auth-password-wrap">
+                <input type="password" id="login-password" placeholder="Ingresa tu contraseña" autocomplete="current-password">
+                <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('login-password', this)" title="Mostrar u ocultar contraseña" aria-label="Mostrar u ocultar contraseña">👁️</button>
+              </div>
+            </div>
+
+            <div class="checkout-actions" style="margin-top: 1.25rem;">
+              <button type="submit" id="btn-auth-login-submit" class="btn-confirm-checkout-wpp auth-primary-submit-btn" style="width: 100%;">
+                <span>🔑 Iniciar Sesión</span>
+              </button>
+            </div>
+
+            <div class="auth-switch-hint">
+              ¿Aún no tienes cuenta? <button type="button" onclick="switchAuthTab('register')">Regístrate gratis aquí</button>
+            </div>
+          </form>
+
+          <!-- FORMULARIO 2: REGISTRARSE -->
+          <form id="customer-register-form" onsubmit="handleCustomerRegister(event)" class="auth-tab-content" novalidate>
+            <div class="auth-form-intro">
+              <h3>Crea tu Cuenta Exclusiva 🌸</h3>
+              <p>Desbloquea acceso inmediato a todos los precios y compras seguras conectadas a la nube.</p>
+            </div>
+
+            <div class="checkout-field">
+              <label for="reg-name">Nombre de Usuario *</label>
+              <input type="text" id="reg-name" placeholder="Ej: Camila Pérez" autocomplete="name">
+            </div>
+
+            <div class="auth-two-cols">
+              <div class="checkout-field">
+                <label for="reg-phone">WhatsApp / Teléfono *</label>
+                <input type="tel" id="reg-phone" placeholder="Ej: 3101234567" autocomplete="tel">
+              </div>
+
+              <div class="checkout-field">
+                <label for="reg-email">Correo Electrónico *</label>
+                <input type="email" id="reg-email" placeholder="tu-correo@gmail.com" autocomplete="email">
+              </div>
+            </div>
+
+            <div class="auth-two-cols">
+              <div class="checkout-field">
+                <label for="reg-department">Departamento *</label>
+                <input type="text" id="reg-department" placeholder="Ej: Antioquia, Valle...">
+              </div>
+
+              <div class="checkout-field">
+                <label for="reg-city">Ciudad *</label>
+                <input type="text" id="reg-city" placeholder="Ej: Medellín, Cali...">
+              </div>
+            </div>
+
+            <div class="auth-two-cols">
+              <div class="checkout-field">
+                <label for="reg-password">Contraseña *</label>
+                <div class="auth-password-wrap">
+                  <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                  <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('reg-password', this)" title="Mostrar u ocultar contraseña" aria-label="Mostrar u ocultar contraseña">👁️</button>
+                </div>
+              </div>
+
+              <div class="checkout-field">
+                <label for="reg-password-confirm">Confirmar Contraseña *</label>
+                <div class="auth-password-wrap">
+                  <input type="password" id="reg-password-confirm" placeholder="Repite tu contraseña" autocomplete="new-password">
+                  <button type="button" class="btn-toggle-pwd" onclick="togglePasswordVisibility('reg-password-confirm', this)" title="Mostrar u ocultar confirmación" aria-label="Mostrar u ocultar confirmación">👁️</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="checkout-actions" style="margin-top: 1.25rem;">
+              <button type="submit" id="btn-auth-register-submit" class="btn-confirm-checkout-wpp auth-primary-submit-btn" style="width: 100%;">
+                <span>✨ Crear mi Cuenta</span>
+              </button>
+            </div>
+
+            <div class="auth-switch-hint">
+              ¿Ya tienes una cuenta? <button type="button" onclick="switchAuthTab('login')">Inicia sesión aquí</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- VISTA DE USUARIO AUTENTICADO -->
+        <div id="auth-logged-view" style="display: none;">
+          <div class="auth-profile-card">
+            <div class="auth-profile-header-row">
+              <div class="auth-profile-avatar-big" id="auth-profile-avatar-big">🌸</div>
+              <div class="auth-profile-identity-info">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <h3 id="auth-profile-name">Camila Pérez</h3>
+                  <span class="auth-profile-badge" id="auth-profile-badge">👑 VIP</span>
+                </div>
+                <p id="auth-profile-email" class="auth-profile-email-text"></p>
+              </div>
+            </div>
+            
+            <!-- TARJETA DE "TU SALDO" DISPONIBLE -->
+            <div class="auth-balance-box">
+              <div class="auth-balance-top">
+                <span class="auth-balance-label">💎 Tu Saldo</span>
+                <button type="button" class="btn-balance-recharge-trigger" onclick="toggleRechargeDrawer()" title="Recargar Tu Saldo">
+                  <span>➕ Recargar Saldo</span>
+                </button>
+              </div>
+              <div class="auth-balance-amount" id="auth-profile-balance">$0 COP</div>
+              <small class="auth-balance-note">Sincronizado en tiempo real • Se descuenta automáticamente al finalizar tus pedidos</small>
+            </div>
+
+            <!-- INDICADOR DE SOLICITUDES DE RECARGA PENDIENTES -->
+            <div id="auth-pending-recharges-box" class="auth-pending-recharges-box" style="display: none;"></div>
+
+            <!-- FORMULARIO DE RECARGA DE "TU SALDO" -->
+            <div class="auth-recharge-form-box" id="auth-recharge-form-box" style="display: none;">
+              <form id="customer-recharge-form" onsubmit="submitCustomerRechargeRequest(event)">
+                <div class="recharge-form-head">
+                  <strong>💳 Recargar Tu Saldo</strong>
+                  <button type="button" class="btn-close-recharge-inline" onclick="toggleRechargeDrawer(false)">✕</button>
+                </div>
+                <div id="recharge-accounts-live-hint" style="display:none; margin-bottom:10px; padding:10px 12px; border-radius:10px; background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.32); font-size:0.81rem; color:#FDF8F0; line-height:1.45;"></div>
+                <label class="recharge-field-label" for="recharge-amount-input">
+                  Monto a Recargar (COP) *
+                </label>
+                <input type="number" id="recharge-amount-input" min="10000" step="1000" placeholder="Ej: 50000" required class="recharge-number-input">
+                <div class="recharge-chips-row">
+                  <button type="button" class="btn-chip-amount" onclick="setRechargeChip(20000)">$20.000</button>
+                  <button type="button" class="btn-chip-amount" onclick="setRechargeChip(50000)">$50.000</button>
+                  <button type="button" class="btn-chip-amount" onclick="setRechargeChip(100000)">$100.000</button>
+                  <button type="button" class="btn-chip-amount" onclick="setRechargeChip(200000)">$200.000</button>
+                </div>
+                <label class="recharge-field-label" for="recharge-method-select">
+                  Medio de Pago Preferido
+                </label>
+                <select id="recharge-method-select" class="recharge-select-input">
+                  <option value="Nequi">📱 Nequi</option>
+                  <option value="Bancolombia">🏦 Bancolombia / Ahorro a la Mano</option>
+                  <option value="Daviplata">📲 Daviplata</option>
+                  <option value="PSE / Transferencia">💳 PSE / Transferencia Bancaria</option>
+                </select>
+                <label class="recharge-field-label" for="recharge-reference-input">
+                  Número de Comprobante / Referencia (Opcional)
+                </label>
+                <input type="text" id="recharge-reference-input" placeholder="Ej: Comprobante Nequi #123456" class="recharge-number-input" style="font-family: inherit; font-size: 0.9rem;">
+                <label class="recharge-field-label" for="recharge-note-input">
+                  Nota o Mensaje Adicional (Opcional)
+                </label>
+                <input type="text" id="recharge-note-input" placeholder="Ej: Pago realizado por Juan Pérez" class="recharge-number-input" style="font-family: inherit; font-size: 0.9rem;">
+                <button type="submit" class="btn-confirm-checkout-wpp" style="width: 100%; font-size: 0.88rem; padding: 0.7rem 1rem; margin-top: 8px;">
+                  <span>💎 Enviar Solicitud de Recarga</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="auth-profile-details">
+            <div class="auth-detail-item">
+              <span>📱 WhatsApp:</span>
+              <strong id="auth-profile-phone">--</strong>
+            </div>
+            <div class="auth-detail-item">
+              <span>📍 Ciudad:</span>
+              <strong id="auth-profile-city">--</strong>
+            </div>
+          </div>
+
+          <!-- SEGUIMIENTO EN TIEMPO REAL DE PEDIDOS DEL CLIENTE (CONECTADO CON ADMIN) -->
+          <div id="auth-orders-history-box" class="vip-orders-history-box" style="display: none;">
+            <div class="auth-tx-title" style="margin-bottom: 0.5rem;">📦 Mis Pedidos &amp; Estado de Despacho en Vivo</div>
+            <div id="auth-orders-history-list"></div>
+          </div>
+
+          <!-- HISTORIAL RECIENTE DE MOVIMIENTOS DE TU SALDO -->
+          <div id="auth-transactions-box" class="auth-transactions-box" style="display: none;">
+            <div class="auth-tx-title">📋 Últimos Movimientos de Tu Saldo</div>
+            <div id="auth-transactions-list" class="auth-transactions-list"></div>
+          </div>
+
+          <div class="checkout-actions" style="margin-top: 1.25rem; display: flex; gap: 0.75rem;">
+            <button type="button" class="btn-cancel-checkout" style="flex: 1;" onclick="handleCustomerLogout()">
+              🚪 Cerrar Sesión
+            </button>
+            <button type="button" class="btn-confirm-checkout-wpp auth-primary-submit-btn" style="flex: 1;" onclick="closeAuthModal()">
+              ✓ Continuar en Tienda
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN FLOTANTE Y FIJO DE WHATSAPP OFICIAL (SINCRONIZADO CON ADMIN) -->
+  <a id="floating-whatsapp-btn" href="https://wa.me/573135143012?text=Hola%20Bloom%20Beauty%20%F0%9F%8C%B8%20Quisiera%20recibir%20atenci%C3%B3n%20personalizada." target="_blank" rel="noopener noreferrer" class="floating-whatsapp-btn" aria-label="Asesoría VIP por WhatsApp" title="Hablar por WhatsApp con Asesora VIP">
+    <span class="floating-whatsapp-pulse" aria-hidden="true"></span>
+    <i class="fab fa-whatsapp whatsapp-official-icon" aria-hidden="true"></i>
+  </a>
+
+  <!-- WIDGET DE PRUEBA SOCIAL EN VIVO DESACTIVADO POR SOLICITUD DEL USUARIO -->
+  <div id="live-sales-popup" class="live-sales-popup" style="display: none !important; opacity: 0 !important; pointer-events: none !important;" aria-hidden="true"></div>
+
+  
+
+  <!-- SCRIPTS ESENCIALES BLOOM BEAUTY V6 (CARGA INSTANTÁNEA) -->
   <script src="data.js?v=7.0.0"></script>
   <script src="database.js?v=7.0.0"></script>
   <script src="tracker.js?v=7.0.0"></script>

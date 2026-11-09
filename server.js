@@ -217,14 +217,20 @@ app.post('/api/v6/auth/login', async (req, res) => {
 
     let customer = null;
     if (supabase) {
-      const query = supabase.from('customers').select('*');
+      let data = null;
       if (cleanId.includes('@')) {
-        query.eq('email', cleanId);
-      } else {
-        query.eq('phone', cleanPhone);
+        const res = await supabase.from('customers').select('*').eq('email', cleanId).maybeSingle();
+        data = res.data;
+      } else if (cleanPhone && cleanPhone.length >= 7) {
+        const res = await supabase.from('customers').select('*').eq('phone', cleanPhone).maybeSingle();
+        data = res.data;
       }
-      const { data, error } = await query.maybeSingle();
-      if (error || !data) {
+      if (!data) {
+        // Fallback: permitir login con username o name
+        const res = await supabase.from('customers').select('*').or(`username.ilike.${cleanId},name.ilike.${cleanId}`).maybeSingle();
+        data = res.data;
+      }
+      if (!data) {
         return res.status(401).json({ success: false, message: 'Credenciales no válidas.' });
       }
       customer = data;
@@ -493,16 +499,50 @@ app.post('/api/v6/orders/confirm', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Cliente no encontrado.' });
     }
 
+    const finalPaymentMethod = paymentMethod || 'saldo_virtual';
     const subtotal = items.reduce((sum, it) => sum + (Number(it.price || 0) * Number(it.quantity || 1)), 0);
-    const discount = 0;
+    
+    // Calcular descuento de cupón admitido (dinámico vía Supabase u ofertas base)
+    const cleanCoupon = String(couponCode || '').trim().toUpperCase();
+    let discount = 0;
+    if (cleanCoupon) {
+      if (supabase) {
+        try {
+          const { data: offerData } = await supabase.from('offers').select('*').eq('code', cleanCoupon).eq('is_active', true).maybeSingle();
+          if (offerData) {
+            if (offerData.discount_percent > 0) {
+              discount = Math.round(subtotal * (Number(offerData.discount_percent) / 100));
+            } else if (offerData.discount_fixed > 0) {
+              discount = Math.round(Number(offerData.discount_fixed));
+            }
+          }
+        } catch (offerErr) {}
+      }
+      if (discount === 0) {
+        if (cleanCoupon === 'BLOOM20') {
+          discount = Math.round(subtotal * 0.20);
+        } else if (cleanCoupon === 'VIP10') {
+          discount = Math.round(subtotal * 0.10);
+        } else if (cleanCoupon === 'BLOOM15') {
+          discount = Math.round(subtotal * 0.15);
+        } else if (cleanCoupon === 'BLOOM5') {
+          discount = Math.round(subtotal * 0.05);
+        } else if (cleanCoupon.startsWith('BLOOM') && cleanCoupon.length <= 10) {
+          const num = parseInt(cleanCoupon.replace(/\D/g, ''), 10);
+          if (num > 0 && num <= 50) {
+            discount = Math.round(subtotal * (num / 100));
+          }
+        }
+      }
+    }
     const total = Math.max(0, subtotal - discount);
 
     const currentBalance = Number(customer.balance || 0);
-    if (paymentMethod === 'saldo_virtual' && currentBalance < total) {
+    if (finalPaymentMethod === 'saldo_virtual' && currentBalance < total) {
       return res.status(400).json({
         success: false,
         code: 'INSUFFICIENT_FUNDS',
-        message: 'Saldo insuficiente para completar la compra.'
+        message: 'Saldo insuficiente para completar la compra. Por favor recarga tu saldo.'
       });
     }
 
@@ -515,9 +555,9 @@ app.post('/api/v6/orders/confirm', async (req, res) => {
       items: items,
       subtotal,
       discount,
-      coupon_code: couponCode ? sanitizeInput(couponCode) : null,
+      coupon_code: cleanCoupon || null,
       total,
-      payment_method: paymentMethod || 'saldo_virtual',
+      payment_method: finalPaymentMethod,
       status: 'completada',
       delivery_info: delivery || {},
       created_at: new Date().toISOString()
@@ -527,7 +567,7 @@ app.post('/api/v6/orders/confirm', async (req, res) => {
 
     if (supabase) {
       await supabase.from('orders').insert([newOrder]);
-      if (paymentMethod === 'saldo_virtual') {
+      if (finalPaymentMethod === 'saldo_virtual') {
         await supabase.from('customers').update({ balance: newBalance }).eq('id', customerId);
         await supabase.from('transactions').insert([{
           id: 'tx_' + Date.now(),
@@ -539,6 +579,21 @@ app.post('/api/v6/orders/confirm', async (req, res) => {
           reference: orderId,
           created_at: new Date().toISOString()
         }]);
+      }
+
+      // Descontar inventario / stock en tiempo real
+      if (Array.isArray(items) && items.length > 0) {
+        for (const it of items) {
+          if (it && it.id && Number(it.quantity) > 0) {
+            try {
+              const { data: prodData } = await supabase.from('products').select('stock').eq('id', String(it.id)).maybeSingle();
+              if (prodData && typeof prodData.stock === 'number') {
+                const updatedStock = Math.max(0, prodData.stock - Number(it.quantity));
+                await supabase.from('products').update({ stock: updatedStock }).eq('id', String(it.id));
+              }
+            } catch (stockErr) {}
+          }
+        }
       }
     }
 

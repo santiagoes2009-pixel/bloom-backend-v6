@@ -35,6 +35,7 @@ const BloomDB = (() => {
 
   const syncCallbacks = [];
   let isIndexedDBReady = false;
+  let isPullingFromCloud = false;
 
   // Inicializar lastPingSeen con el valor actual para evitar disparos falsos al arrancar
   let lastPingSeen = 0;
@@ -171,7 +172,7 @@ const BloomDB = (() => {
       endpointUrl: 'https://bloom-backend-v6.onrender.com',
       apiKey: '',
       environment: 'cloud-hybrid-v6',
-      timeoutMs: 8000
+      timeoutMs: 45000
     };
     try {
       const raw = localStorage.getItem(CLOUD_CONFIG_KEY);
@@ -201,7 +202,7 @@ const BloomDB = (() => {
     const cfg = getCloudConfig();
     if (cfg.enabled && cfg.endpointUrl && typeof fetch === 'function') {
       const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const timer = controller ? setTimeout(() => controller.abort(), cfg.timeoutMs || 8000) : null;
+      const timer = controller ? setTimeout(() => controller.abort(), cfg.timeoutMs || 45000) : null;
       try {
         const headers = { 'Content-Type': 'application/json' };
         if (cfg.apiKey) headers['Authorization'] = `Bearer ${cfg.apiKey}`;
@@ -221,6 +222,45 @@ const BloomDB = (() => {
             } finally {
               isPullingFromCloud = false;
             }
+          }
+          // Sincronizar de inmediato entidades devueltas por la nube en el almacenamiento local
+          if (remoteJson && remoteJson.user) {
+            try {
+              const currentList = getCustomers();
+              const idx = currentList.findIndex(c => String(c.id) === String(remoteJson.user.id));
+              if (idx !== -1) {
+                currentList[idx] = Object.assign({}, currentList[idx], remoteJson.user);
+              } else {
+                currentList.unshift(remoteJson.user);
+              }
+              saveCustomers(currentList);
+            } catch (uErr) {}
+          }
+          if (remoteJson && remoteJson.order) {
+            try {
+              saveOrder(remoteJson.order);
+              const targetCustId = remoteJson.order.customer_id || remoteJson.order.customerId;
+              if (typeof remoteJson.newBalance === 'number' && targetCustId) {
+                const list = getCustomers();
+                const cIdx = list.findIndex(c => String(c.id) === String(targetCustId));
+                if (cIdx !== -1) {
+                  list[cIdx].balance = sanitizeBalance(remoteJson.newBalance);
+                  saveCustomers(list);
+                }
+              }
+            } catch (oErr) {}
+          }
+          if (remoteJson && remoteJson.recharge) {
+            try {
+              const reqs = getRechargeRequests();
+              const rIdx = reqs.findIndex(r => String(r.id) === String(remoteJson.recharge.id));
+              if (rIdx !== -1) {
+                reqs[rIdx] = Object.assign({}, reqs[rIdx], remoteJson.recharge);
+              } else {
+                reqs.unshift(remoteJson.recharge);
+              }
+              saveRechargeRequests(reqs);
+            } catch (rErr) {}
           }
           return remoteJson;
         }
@@ -380,7 +420,6 @@ const BloomDB = (() => {
   // 3. BUS DE SINCRONIZACIÓN EN TIEMPO REAL (MULTI-PESTAÑA / MULTI-VENTANA)
   // --------------------------------------------------------------------------
   let cloudPushTimer = null;
-  let isPullingFromCloud = false;
 
   function scheduleCloudAutoPush(reasonType) {
     if (isPullingFromCloud) return;
@@ -1713,7 +1752,7 @@ const BloomDB = (() => {
       }
 
       const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      const timer = controller ? setTimeout(() => controller.abort(), 5000) : null;
+      const timer = controller ? setTimeout(() => controller.abort(), 45000) : null;
       try {
         const headers = { 'Accept': 'application/json' };
         if (targetKey) headers['Authorization'] = `Bearer ${targetKey}`;
@@ -1807,7 +1846,7 @@ const BloomDB = (() => {
           isPullingFromCloud = false;
         }
         dispatchSync({ type: 'CLOUD_SNAPSHOT_PULLED', timestamp: Date.now() });
-        return { success: true, message: 'Datos sincronizados desde el servidor exitosamente.' };
+        return { success: true, database: db, message: 'Datos sincronizados desde el servidor exitosamente.' };
       } catch (err) {
         return { success: false, message: 'No se pudo descargar el estado desde el servidor.' };
       }
@@ -2201,12 +2240,42 @@ const BloomDB = (() => {
     return list;
   }
 
+  const DEFAULT_OFFERS_SEED = [
+    {
+      id: 'OFR_BLOOM_20',
+      title: 'Cupón Bienvenida Bloom 20%',
+      description: '20% de descuento especial de bienvenida en toda la tienda',
+      discountPercent: 20,
+      bannerText: '20% de descuento VIP con el cupón BLOOM20',
+      targetCategory: 'Todas',
+      targetBrand: 'Todas',
+      active: true,
+      couponCode: 'BLOOM20',
+      createdAt: '2026-11-08'
+    },
+    {
+      id: 'OFR_VIP_10',
+      title: 'Descuento VIP Bloom 10%',
+      description: '10% de descuento en todo el catálogo oficial',
+      discountPercent: 10,
+      bannerText: '10% de descuento especial con el cupón VIP10',
+      targetCategory: 'Todas',
+      targetBrand: 'Todas',
+      active: true,
+      couponCode: 'VIP10',
+      createdAt: '2026-11-08'
+    }
+  ];
+
   function getOffers() {
     try {
       const raw = localStorage.getItem(OFFERS_KEY);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
     } catch (e) {}
-    return [];
+    return DEFAULT_OFFERS_SEED;
   }
 
   function saveOffers(list) {
@@ -2484,12 +2553,12 @@ const DEFAULT_SITE_DATA = ${JSON.stringify({ storeInfo: data.storeInfo, brands: 
     });
   }
 
-  // Auto-descubrimiento inteligente cuando se sirve desde Servidor Unificado HTTP/Cloud
-  if (typeof window !== 'undefined' && window.location && /^https?:$/i.test(window.location.protocol)) {
+  // Auto-descubrimiento y sincronización inteligente Cloud-First permanente
+  if (typeof window !== 'undefined') {
     setTimeout(async () => {
       try {
         const cfg = getCloudConfig();
-        const probeOrigin = cfg.enabled && cfg.endpointUrl ? cfg.endpointUrl : window.location.origin;
+        const probeOrigin = cfg.enabled && cfg.endpointUrl ? cfg.endpointUrl : (window.location && /^https?:$/i.test(window.location.protocol) ? window.location.origin : 'https://bloom-backend-v6.onrender.com');
         const res = await fetch(`${probeOrigin}/api/v6/health`, { method: 'GET' }).catch(() => null);
         if (res && res.ok) {
           const info = await res.json().catch(() => ({}));
@@ -2501,7 +2570,7 @@ const DEFAULT_SITE_DATA = ${JSON.stringify({ storeInfo: data.storeInfo, brands: 
           }
         }
       } catch (e) {}
-    }, 350);
+    }, 200);
   }
 
   function getHealth() {
@@ -2667,6 +2736,10 @@ const DEFAULT_SITE_DATA = ${JSON.stringify({ storeInfo: data.storeInfo, brands: 
     getHealth
   };
 })();
+
+if (typeof window !== 'undefined') {
+  window.BloomDB = BloomDB;
+}
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = BloomDB;

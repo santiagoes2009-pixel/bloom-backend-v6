@@ -179,7 +179,10 @@ async function refreshSessionsFromStorage() {
 
   // 2. Consulta directa y en vivo a la API en la nube (Render + Supabase)
   try {
-    const res = await fetch('https://bloom-backend-v6.onrender.com/api/v6/visitors/live');
+    const cloudEndpoint = (typeof BloomDB !== 'undefined' && BloomDB.getCloudConfig)
+      ? BloomDB.getCloudConfig().endpointUrl
+      : 'https://bloom-backend-v6.onrender.com';
+    const res = await fetch(`${cloudEndpoint}/api/v6/visitors/live`);
     if (res.ok) {
       const data = await res.json();
       if (data && data.success && Array.isArray(data.visitors)) {
@@ -4959,15 +4962,17 @@ function openReceiptModal(imgUrl, reqId, custName, amount) {
     btnApprove.disabled = true;
     btnApprove.innerText = '⏳ Aprobando...';
     try {
-      const res = await fetch('https://bloom-backend-v6.onrender.com/api/v6/recharges/approve', {
+      const cloudEndpoint = (typeof BloomDB !== 'undefined' && BloomDB.getCloudConfig)
+        ? BloomDB.getCloudConfig().endpointUrl
+        : 'https://bloom-backend-v6.onrender.com';
+      const res = await fetch(`${cloudEndpoint}/api/v6/recharges/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rechargeId: reqId })
       });
+      approveRechargeAction(reqId);
       if (res.ok) {
         showAdminToast('¡Recarga confirmada y saldo acreditado en la nube!', 'success');
-      } else {
-        approveRechargeAction(reqId);
       }
     } catch (e) {
       approveRechargeAction(reqId);
@@ -4994,7 +4999,7 @@ async function autoSyncCloudDataRealTime() {
   try {
     if (typeof BloomDB !== 'undefined' && BloomDB.cloud && typeof BloomDB.cloud.pullSnapshot === 'function') {
       const res = await BloomDB.cloud.pullSnapshot();
-      if (res && (res.success || res.ok) && res.database) {
+      if (res && res.success) {
         refreshDataFromDB();
         renderCurrentView();
         console.log('[CloudSync] Datos sincronizados en tiempo real desde Supabase.');

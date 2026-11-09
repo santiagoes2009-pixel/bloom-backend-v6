@@ -23,7 +23,6 @@
     initHeroTilt3D();
     initBidirectionalScrollEngine();
     initCardsInteractive3D();
-    initUrgencyCountdown();
     // initLiveSocialProofEngine(); // Desactivado por solicitud: notificaciones falsas de compra eliminadas
     patchImageFallbacks();
   }
@@ -367,25 +366,6 @@
   }
 
   // --------------------------------------------------------------------------
-  // 6. CONTADOR DE URGENCIA EN TIEMPO REAL EN LA BARRA SUPERIOR
-  // --------------------------------------------------------------------------
-  function initUrgencyCountdown() {
-    const timerElem = document.getElementById('promo-countdown-timer');
-    if (!timerElem) return;
-
-    let remainingSeconds = 4 * 3600 + 38 * 60 + 45;
-    const renderTick = () => {
-      remainingSeconds = remainingSeconds > 0 ? remainingSeconds - 1 : 4 * 3600 + 59 * 60;
-      const hrs = String(Math.floor(remainingSeconds / 3600)).padStart(2, '0');
-      const mins = String(Math.floor((remainingSeconds % 3600) / 60)).padStart(2, '0');
-      const secs = String(remainingSeconds % 60).padStart(2, '0');
-      timerElem.innerHTML = `⏳ Termina en: <strong>${hrs}h : ${mins}m : ${secs}s</strong>`;
-    };
-    renderTick();
-    setInterval(renderTick, 1000);
-  }
-
-  // --------------------------------------------------------------------------
   // 7. NOTIFICACIONES DE PRUEBA SOCIAL EN VIVO (DESACTIVADAS)
   // --------------------------------------------------------------------------
   function initLiveSocialProofEngine() {
@@ -410,7 +390,7 @@
 
       if (step === 0 && currentSrc && !currentSrc.startsWith('http') && !currentSrc.startsWith('data:')) {
         img.dataset.fallbackStep = '1';
-        img.src = 'https://bloombeauty2.netlify.app/' + currentSrc.replace(/^\/+/, '');
+        img.src = 'https://bloombeauty-oficial.netlify.app/' + currentSrc.replace(/^\/+/, '');
       } else if (step < 2) {
         img.dataset.fallbackStep = '2';
         img.src = 'imagenes/logo-bloom-beauty.jpg';

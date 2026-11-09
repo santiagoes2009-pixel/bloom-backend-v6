@@ -304,7 +304,15 @@
     syncSessionToCloud(false);
   }
 
-  const CLOUD_VISITORS_PING = 'https://bloom-backend-v6.onrender.com/api/v6/visitors/ping';
+  function getCloudPingUrl() {
+    try {
+      if (typeof BloomDB !== 'undefined' && BloomDB.getCloudConfig) {
+        const endpoint = BloomDB.getCloudConfig().endpointUrl;
+        if (endpoint) return `${endpoint}/api/v6/visitors/ping`;
+      }
+    } catch (e) {}
+    return 'https://bloom-backend-v6.onrender.com/api/v6/visitors/ping';
+  }
   let lastCloudPingTimestamp = 0;
 
   function syncSessionToCloud(force = false, actionOverride = '', productObj = null, isCart = false) {
@@ -347,7 +355,7 @@
         url: window.location.hash || window.location.pathname || '/'
       };
 
-      fetch(CLOUD_VISITORS_PING, {
+      fetch(getCloudPingUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
